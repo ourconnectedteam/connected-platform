@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Profile | Connected</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .onboarding-container {
+            max-width: 600px;
+            margin: 80px auto;
+            padding: 32px;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+            border: 1px solid #E5E5E5;
+        }
+
+        .role-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .role-card {
+            border: 2px solid #E5E5E5;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .role-card:hover {
+            border-color: #007AFF;
+        }
+
+        .role-card.selected {
+            border-color: #007AFF;
+            background: #F0F7FF;
+            color: #007AFF;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="onboarding-container">
+        <h2 class="section-title" style="margin-bottom: 32px;">Welcome to Connected</h2>
+        <p style="margin-bottom: 24px; text-align: center; color: var(--text-secondary);">Let's get your profile set up
+            so you can start connecting.</p>
+
+        <form id="onboarding-form">
+            <!-- Full Name -->
+            <div class="form-group">
+                <label for="full-name">Full Name</label>
+                <input type="text" id="full-name" class="form-input" required placeholder="e.g. Alex Chen">
+            </div>
+
+            <!-- Role Selection -->
+            <div class="form-group">
+                <label>I am a...</label>
+                <div class="role-selector">
+                    <div class="role-card" data-value="student">Student</div>
+                    <div class="role-card" data-value="tutor">Tutor</div>
+                    <div class="role-card" data-value="counselor">Counselor</div>
+                </div>
+                <input type="hidden" id="role-input" required>
+            </div>
+
+            <!-- Bio -->
+            <div class="form-group">
+                <label for="bio">Bio</label>
+                <textarea id="bio" class="form-textarea" rows="3"
+                    placeholder="Tell us a bit about yourself..."></textarea>
+            </div>
+
+            <!-- Role Specific Fields (Dynamic) -->
+            <div id="role-fields">
+                <!-- Student Fields -->
+                <div id="fields-student" class="role-group hidden">
+                    <div class="form-group">
+                        <label>Grade Level</label>
+                        <select id="student-grade" class="form-input">
+                            <option value="">Select Grade...</option>
+                            <option value="9">9th Grade (Freshman)</option>
+                            <option value="10">10th Grade (Sophomore)</option>
+                            <option value="11">11th Grade (Junior)</option>
+                            <option value="12">12th Grade (Senior)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tutor Fields -->
+                <div id="fields-tutor" class="role-group hidden">
+                    <div class="form-group">
+                        <label>Subjects (comma separated)</label>
+                        <input type="text" id="tutor-subjects" class="form-input"
+                            placeholder="e.g. Math, Physics, Spanish">
+                    </div>
+                    <div class="form-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div class="form-group">
+                            <label>Hourly Rate ($)</label>
+                            <input type="number" id="tutor-rate" class="form-input" placeholder="40">
+                        </div>
+                        <div class="form-group">
+                            <label>Years Experience</label>
+                            <input type="number" id="tutor-exp" class="form-input" placeholder="2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Counselor Fields -->
+                <div id="fields-counselor" class="role-group hidden">
+                    <div class="form-group">
+                        <label>Specialization (comma separated)</label>
+                        <input type="text" id="counselor-spec" class="form-input"
+                            placeholder="e.g. College Admissions, Mental Health">
+                    </div>
+                    <div class="form-group">
+                        <label>Years Experience</label>
+                        <input type="number" id="counselor-exp" class="form-input" placeholder="5">
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-actions" style="justify-content: center;">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Complete Profile</button>
+            </div>
+            <p id="error-message" style="color: red; text-align: center; margin-top: 16px; display: none;"></p>
+        </form>
+    </div>
+
+    <script type="module">
+        import { supabase } from '/src/lib/supabase.js';
+
+        // Helper to toggle fields
+        function updateRoleFields(role) {
+            // Hide all first
+            const groups = ['student', 'tutor', 'counselor'];
+            groups.forEach(r => {
+                const el = document.getElementById(`fields-${r}`);
+                if (el) el.style.display = 'none';
+            });
+
+            // Show selected
+            if (role) {
+                const group = document.getElementById(`fields-${role}`);
+                if (group) group.style.display = 'block';
+            }
+        }
+
+        // State
+        let existingProfile = null;
+
+        // Init: Check for existing profile
+        async function init() {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return window.location.href = '/src/auth.html#login';
+
+            // Check if profile exists
+            const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            if (data) {
+                existingProfile = data;
+                // Pre-fill
+                document.getElementById('full-name').value = data.full_name || '';
+                document.getElementById('bio').value = data.bio || '';
+                if (data.role) {
+                    roleInput.value = data.role;
+                    updateRoleFields(data.role); // Show fields
+                    roleCards.forEach(c => {
+                        if (c.dataset.value === data.role) c.classList.add('selected');
+                        else c.classList.remove('selected');
+                    });
+                }
+            }
+        }
+        init();
+
+        // Role Selection Logic
+        const roleCards = document.querySelectorAll('.role-card');
+        const roleInput = document.getElementById('role-input');
+
+        roleCards.forEach(card => {
+            card.addEventListener('click', () => {
+                roleCards.forEach(c => c.classList.remove('selected'));
+                card.classList.add('selected');
+                roleInput.value = card.dataset.value;
+                updateRoleFields(card.dataset.value);
+            });
+        });
+
+        // Form Submission
+        document.getElementById('onboarding-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fullName = document.getElementById('full-name').value;
+            const role = roleInput.value;
+            const bio = document.getElementById('bio').value;
+            const errorMsg = document.getElementById('error-message');
+
+            if (!role) {
+                errorMsg.textContent = "Please select a role.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return window.location.href = '/src/auth.html#login';
+
+            let error;
+            if (existingProfile) {
+                // Update
+                const { error: upError } = await supabase.from('profiles').update({
+                    full_name: fullName,
+                    role: role,
+                    bio: bio,
+                    onboarding_complete: true
+                }).eq('id', user.id);
+                error = upError;
+            } else {
+                // Insert
+                const { error: inError } = await supabase.from('profiles').insert({
+                    id: user.id,
+                    full_name: fullName,
+                    role: role,
+                    bio: bio,
+                    onboarding_complete: true
+                });
+                error = inError;
+            }
+
+            if (error) {
+                errorMsg.textContent = error.message;
+                errorMsg.style.display = 'block';
+            } else {
+                // Upsert Role Specific Profile with Extra Data
+                if (role === 'student') {
+                    const grade = document.getElementById('student-grade').value;
+                    await supabase.from('student_profiles').upsert({
+                        user_id: user.id,
+                        grade_level: grade
+                    });
+                }
+                if (role === 'tutor') {
+                    const subjects = document.getElementById('tutor-subjects').value.split(',').map(s => s.trim()).filter(Boolean);
+                    const rate = document.getElementById('tutor-rate').value;
+                    const exp = document.getElementById('tutor-exp').value;
+
+                    await supabase.from('tutor_profiles').upsert({
+                        user_id: user.id,
+                        subjects: subjects,
+                        hourly_rate: rate ? parseFloat(rate) : null,
+                        years_experience: exp ? parseInt(exp) : null
+                    });
+                }
+                if (role === 'counselor') {
+                    const spec = document.getElementById('counselor-spec').value.split(',').map(s => s.trim()).filter(Boolean);
+                    const exp = document.getElementById('counselor-exp').value;
+
+                    await supabase.from('counselor_profiles').upsert({
+                        user_id: user.id,
+                        specialization: spec,
+                        years_experience: exp ? parseInt(exp) : null
+                    });
+                }
+
+                window.location.href = role === 'student' ? '/dashboard-student.html' :
+                    role === 'tutor' ? '/dashboard-tutor.html' : '/counselor-dashboard.html';
+            }
+        });
+    </script>
+</body>
+
+</html>

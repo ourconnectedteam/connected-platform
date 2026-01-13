@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Counselors | Connected</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">Connected</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="tutors.html">Tutors</a>
+                <a href="counselors.html" class="active">Counselors</a>
+                <a href="buddies.html">Study Buddies</a>
+            </div>
+            <div class="nav-auth">
+                <a href="#login" class="btn btn-sm btn-secondary btn-white">Log In</a>
+                <a href="#signup" class="btn btn-sm btn-primary">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <div class="container">
+            <div class="layout-grid">
+                <!-- Sidebar Filters -->
+                <aside class="filter-sidebar">
+                    <div class="filter-header">
+                        <h3>Filters</h3>
+                        <button class="btn-text">Clear all</button>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Target Country</h4>
+                        <div class="filter-options">
+                            <label class="checkbox-item"><input type="checkbox"> USA (Ivy League)</label>
+                            <label class="checkbox-item"><input type="checkbox"> USA (Other)</label>
+                            <label class="checkbox-item"><input type="checkbox"> UK (Oxbridge)</label>
+                            <label class="checkbox-item"><input type="checkbox"> UK (Russell Group)</label>
+                            <label class="checkbox-item"><input type="checkbox"> Canada</label>
+                            <label class="checkbox-item"><input type="checkbox"> Europe</label>
+                            <label class="checkbox-item"><input type="checkbox"> Australia/Asia</label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Expertise / Major</h4>
+                        <div class="filter-options">
+                            <!-- Popular Majors -->
+                            <label class="checkbox-item"><input type="checkbox"> Engineering</label>
+                            <label class="checkbox-item"><input type="checkbox"> Medicine (Pre-Med)</label>
+                            <label class="checkbox-item"><input type="checkbox"> Law</label>
+                            <label class="checkbox-item"><input type="checkbox"> Business / Econ</label>
+                            <label class="checkbox-item"><input type="checkbox"> Computer Science</label>
+                            <label class="checkbox-item"><input type="checkbox"> Arts & Humanities</label>
+
+                            <!-- Hidden Majors -->
+                            <div id="extra-majors" style="display: none; flex-direction: column; gap: 12px;">
+                                <label class="checkbox-item"><input type="checkbox"> Psychology</label>
+                                <label class="checkbox-item"><input type="checkbox"> Architecture</label>
+                                <label class="checkbox-item"><input type="checkbox"> Political Science</label>
+                                <label class="checkbox-item"><input type="checkbox"> Mathematics</label>
+                                <label class="checkbox-item"><input type="checkbox"> Physics</label>
+                                <label class="checkbox-item"><input type="checkbox"> Chemistry</label>
+                                <label class="checkbox-item"><input type="checkbox"> Biology</label>
+                                <label class="checkbox-item"><input type="checkbox"> Environmental Science</label>
+                                <label class="checkbox-item"><input type="checkbox"> History</label>
+                                <label class="checkbox-item"><input type="checkbox"> Philosophy</label>
+                                <label class="checkbox-item"><input type="checkbox"> Modern Languages</label>
+                                <label class="checkbox-item"><input type="checkbox"> Visual Arts</label>
+                                <label class="checkbox-item"><input type="checkbox"> Music</label>
+                                <label class="checkbox-item"><input type="checkbox"> Film</label>
+                                <label class="checkbox-item"><input type="checkbox"> Education</label>
+                            </div>
+
+                            <button id="show-more-majors" class="btn-text"
+                                style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                                Show more
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 1L5 5L9 1" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Services</h4>
+                        <div class="filter-options">
+                            <label class="checkbox-item"><input type="checkbox"> Essay Editing</label>
+                            <label class="checkbox-item"><input type="checkbox"> Interview Prep</label>
+                            <label class="checkbox-item"><input type="checkbox"> University Selection</label>
+                            <label class="checkbox-item"><input type="checkbox"> Strategic Planning</label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Price Range</h4>
+                        <div class="filter-options">
+                            <label class="checkbox-item"><input type="checkbox"> $50 - $100 / hr</label>
+                            <label class="checkbox-item"><input type="checkbox"> $100 - $200 / hr</label>
+                            <label class="checkbox-item"><input type="checkbox"> $200+ / hr</label>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <section class="results-section">
+                    <div class="results-header">
+                        <div>
+                            <h1>Top University Counselors</h1>
+                            <p class="text-secondary">48 verified counselors available</p>
+                        </div>
+                        <div class="sort-wrapper">
+                            <span>Sort by:</span>
+                            <select class="sort-select">
+                                <option>Recommended</option>
+                                <option>Price: Low to High</option>
+                                <option>Price: High to Low</option>
+                                <option>Rating</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="profiles-grid">
+                        <!-- Profiles will be loaded here via JS -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Connected</h3>
+                    <p>Empowering IB students worldwide.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#">Instagram</a>
+                    <a href="#">LinkedIn</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Connected. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>

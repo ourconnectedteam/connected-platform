@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Tutors | Connected</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">Connected</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="tutors.html" class="active">Tutors</a>
+                <a href="counselors.html">Counselors</a>
+                <a href="buddies.html">Study Buddies</a>
+            </div>
+            <div class="nav-auth">
+                <a href="#login" class="btn btn-sm btn-secondary btn-white">Log In</a>
+                <a href="#signup" class="btn btn-sm btn-primary">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="page-container">
+        <div class="container">
+            <div class="layout-grid">
+                <!-- Sidebar Filters -->
+                <aside class="filter-sidebar">
+                    <div class="filter-header">
+                        <h3>Filters</h3>
+                        <button class="btn-text">Clear all</button>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Subject</h4>
+                        <div class="filter-options">
+                            <!-- Top 6 Popular -->
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="Math AA"> Math
+                                AA</label>
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="Math AI"> Math
+                                AI</label>
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="Biology">
+                                Biology</label>
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="Chemistry">
+                                Chemistry</label>
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="Economics">
+                                Economics</label>
+                            <label class="checkbox-item"><input type="checkbox" name="subject" value="English A: L&L">
+                                English A: L&L</label>
+
+                            <!-- Hidden Subjects -->
+                            <div id="extra-subjects" style="display: none; flex-direction: column; gap: 12px;">
+                                <label class="checkbox-item"><input type="checkbox" name="subject" value="Physics">
+                                    Physics</label>
+                                <label class="checkbox-item"><input type="checkbox" name="subject"
+                                        value="Business Mgmt"> Business Mgmt</label>
+                                <label class="checkbox-item"><input type="checkbox" name="subject" value="Psychology">
+                                    Psychology</label>
+                                <label class="checkbox-item"><input type="checkbox" name="subject"
+                                        value="Computer Science"> Computer Science</label>
+                            </div>
+
+                            <button id="show-more-subjects" class="btn-text"
+                                style="display: flex; align-items: center; gap: 4px; margin-top: 4px;">
+                                Show more
+                                <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor"
+                                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M1 1L5 5L9 1" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Price Range</h4>
+                        <div class="filter-options">
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="price" value="low"> $0 - $40 / hr
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="price" value="mid"> $40 - $60 / hr
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox" name="price" value="high"> $60+ / hr
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <h4 class="filter-title">Availability</h4>
+                        <div class="filter-options">
+                            <label class="checkbox-item">
+                                <input type="checkbox"> Today
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox"> This Week
+                            </label>
+                            <label class="checkbox-item">
+                                <input type="checkbox"> Weekends
+                            </label>
+                        </div>
+                    </div>
+                </aside>
+
+                <!-- Main Content -->
+                <section class="results-section">
+                    <div class="results-header">
+                        <div>
+                            <h1>Top IB Tutors</h1>
+                            <p class="text-secondary">74 verified tutors available</p>
+                        </div>
+                        <div class="sort-wrapper">
+                            <span>Sort by:</span>
+                            <select class="sort-select">
+                                <option>Recommended</option>
+                                <option>Price: Low to High</option>
+                                <option>Price: High to Low</option>
+                                <option>Rating</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="profiles-grid">
+                        <!-- Profiles will be loaded here via JS -->
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <h3>Connected</h3>
+                    <p>Empowering IB students worldwide.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                    <a href="#">Privacy</a>
+                    <a href="#">Terms</a>
+                </div>
+                <div class="footer-social">
+                    <a href="#">Instagram</a>
+                    <a href="#">LinkedIn</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024 Connected. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
