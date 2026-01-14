@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | Connected</title>
+    <link rel="stylesheet" href="/src/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .profile-header {
+            background: white;
+            padding: 30px 0 20px 0;
+            /* Reduced padding */
+            border-bottom: 1px solid var(--border-color);
+            text-align: center;
+            margin-top: 70px;
+            /* Clear the fixed navbar */
+        }
+
+        .profile-avatar-lg {
+            width: 100px;
+            /* Slightly smaller */
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 12px;
+            border: 4px solid white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .profile-name {
+            font-size: 1.75rem;
+            /* Slightly smaller */
+            font-weight: 700;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .profile-role {
+            font-size: 1rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .profile-actions {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .profile-content {
+            padding: 24px 0;
+            /* Reduced padding */
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content-section {
+            background: white;
+            padding: 24px;
+            /* Reduced padding */
+            border-radius: 20px;
+            margin-bottom: 16px;
+            /* Reduced margin */
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .section-header {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-primary);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 16px;
+        }
+
+        .info-item label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 2px;
+        }
+
+        .info-item span {
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <a href="index.html" class="logo">Connected</a>
+            <div class="nav-links">
+                <a href="index.html">Home</a>
+                <a href="tutors.html">Tutors</a>
+                <a href="counselors.html">Counselors</a>
+                <a href="buddies.html">Study Buddies</a>
+            </div>
+            <div class="nav-auth">
+                <!-- Auth state handled by main.js -->
+            </div>
+        </div>
+    </nav>
+
+    <div id="profile-container" style="display: none;">
+        <div class="profile-header">
+            <div class="container">
+                <img id="p-avatar" src="" alt="Avatar" class="profile-avatar-lg">
+                <h1 id="p-name" class="profile-name"></h1>
+                <p id="p-role" class="profile-role"></p>
+
+                <div class="profile-actions" id="p-actions">
+                    <!-- Dynamic buttons -->
+                </div>
+            </div>
+        </div>
+
+        <main class="container profile-content">
+            <div class="content-section">
+                <h3 class="section-header">About</h3>
+                <p id="p-bio" style="line-height: 1.6; color: var(--text-secondary);">No bio provided.</p>
+            </div>
+
+            <div class="content-section">
+                <h3 class="section-header">Details</h3>
+                <div class="info-grid" id="p-details">
+                    <!-- Dynamic Details -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="loading" style="text-align: center; padding: 100px;">Loading profile...</div>
+
+    <script type="module" src="/src/main.js"></script>
+    <script type="module">
+        import { supabase } from '/src/lib/supabase.js';
+        // We'll import messaging dynamically or use window.messaging if attached, 
+        // but for now let's keep it simple to ensure loading works.
+        import { messaging } from '/src/lib/messaging.js';
+
+        // Debug logger
+        function logDebug(msg, err = null) {
+            console.log(msg, err);
+            const debugEl = document.getElementById('debug-log') || createDebugEl();
+            debugEl.textContent += msg + (err ? ' ' + JSON.stringify(err) : '') + '\n';
+        }
+
+        function createDebugEl() {
+            const el = document.createElement('pre');
+            el.id = 'debug-log';
+            el.style.cssText = 'background:#eee; padding:10px; font-size:10px; margin:20px; overflow:auto; max-height:200px; display:none;'; // Hidden by default, unhide if stuck
+            document.body.appendChild(el);
+            return el;
+        }
+
+        async function loadProfile() {
+            try {
+                // Show debug if loading takes too long
+                setTimeout(() => {
+                    const loading = document.getElementById('loading');
+                    if (loading && loading.style.display !== 'none') {
+                        document.getElementById('debug-log').style.display = 'block';
+                        loading.textContent = 'Loading is taking longer than expected. See debug log below.';
+                    }
+                }, 3000);
+
+                logDebug("Starting loadProfile...");
+                const params = new URLSearchParams(window.location.search);
+                const userId = params.get('id');
+
+                if (!userId) {
+                    document.getElementById('loading').textContent = 'Error: No user ID provided in URL.';
+                    return;
+                }
+
+                logDebug(`Fetching profile for: ${userId}`);
+
+                // Fetch generic profile
+                const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
+
+                if (error) {
+                    logDebug("Profile fetch error:", error);
+                    document.getElementById('loading').textContent = 'Error fetching profile: ' + error.message;
+                    return;
+                }
+
+                if (!profile) {
+                    document.getElementById('loading').textContent = 'Profile not found.';
+                    return;
+                }
+
+                logDebug(`Profile found: ${profile.full_name} (${profile.role})`);
+
+                // Fetch role specific details based on role
+                let roleData = {};
+                if (profile.role === 'tutor') {
+                    const { data } = await supabase.from('tutor_profiles').select('*').eq('user_id', userId).single();
+                    roleData = data || {};
+                } else if (profile.role === 'counselor') {
+                    const { data } = await supabase.from('counselor_profiles').select('*').eq('user_id', userId).single();
+                    roleData = data || {};
+                } else if (profile.role === 'student') {
+                    const { data } = await supabase.from('student_profiles').select('*').eq('user_id', userId).single();
+                    roleData = data || {};
+                }
+
+                renderProfile(profile, roleData);
+            } catch (err) {
+                logDebug("Critical Error:", err);
+                document.getElementById('loading').textContent = 'Unexpected Error: ' + err.message;
+            }
+        }
+
+        function renderProfile(user, details) {
+            logDebug("Rendering profile...");
+            const loading = document.getElementById('loading');
+            if (loading) loading.style.display = 'none';
+
+            document.getElementById('profile-container').style.display = 'block';
+
+            // Basic Info
+            const avatar = user.avatar_url || `/assets/${user.role}.png`;
+            document.getElementById('p-name').textContent = user.full_name;
+            document.getElementById('p-role').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            document.getElementById('p-avatar').src = avatar;
+            document.getElementById('p-bio').textContent = user.bio || "This user hasn't written a bio yet.";
+
+            // Role Details
+            const grid = document.getElementById('p-details');
+            let html = '';
+
+            if (user.role === 'tutor') {
+                html += `<div class="info-item"><label>Subjects</label><span>${details.subjects?.join(', ') || 'N/A'}</span></div>`;
+                html += `<div class="info-item"><label>Hourly Rate</label><span>$${details.hourly_rate || '?'}</span></div>`;
+                html += `<div class="info-item"><label>Experience</label><span>${details.years_experience || 0} Years</span></div>`;
+            } else if (user.role === 'counselor') {
+                html += `<div class="info-item"><label>Specialization</label><span>${details.specialization?.join(', ') || 'N/A'}</span></div>`;
+                html += `<div class="info-item"><label>Experience</label><span>${details.years_experience || 0} Years</span></div>`;
+            } else if (user.role === 'student') {
+                html += `<div class="info-item"><label>Grade Level</label><span>${details.grade_level || 'N/A'}</span></div>`;
+                html += `<div class="info-item"><label>Academic Interests</label><span>${details.academic_interests?.join(', ') || 'N/A'}</span></div>`;
+            }
+            grid.innerHTML = html;
+
+            // Actions
+            const actionContainer = document.getElementById('p-actions');
+            let btns = '';
+
+            // Encode safely
+            const safeName = encodeURIComponent(user.full_name);
+            const safeImg = encodeURIComponent(avatar);
+
+            if (user.role === 'tutor' || user.role === 'counselor') {
+                btns += `<a href="/booking.html?providerId=${user.id}&name=${safeName}&role=${user.role}&price=${details.hourly_rate || 0}&img=${safeImg}" class="btn btn-primary">Book Session</a>`;
+                btns += `<button class="btn btn-secondary" onclick="startChat('${user.id}')">Message</button>`;
+            } else {
+                btns += `<button class="btn btn-primary" onclick="sendConnectionRequest('${user.id}')">Connect</button>`;
+                btns += `<button class="btn btn-secondary" onclick="startChat('${user.id}')">Message</button>`;
+            }
+            actionContainer.innerHTML = btns;
+        }
+
+        // Initialize
+        loadProfile();
+
+        // Global functions for buttons
+        window.startChat = async (id) => {
+            const session = await supabase.auth.getSession();
+            if (!session.data.session) return window.location.href = '/src/auth.html#login';
+
+            try {
+                const { data, error } = await messaging.startConversation(session.data.session.user.id, id);
+                if (data) window.location.href = '/dashboard-student.html?tab=messages&convId=' + data.id;
+            } catch (e) {
+                alert("Error starting chat: " + e.message);
+            }
+        };
+
+        window.sendConnectionRequest = async (id) => {
+            const session = await supabase.auth.getSession();
+            if (!session.data.session) return window.location.href = '/src/auth.html#login';
+            alert('Request sent!');
+        };
+
+    </script>
+</body>
+
+</html>

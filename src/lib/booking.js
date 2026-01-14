@@ -48,5 +48,41 @@ export const booking = {
 
         // Simulating success for now
         return { sessionUrl: 'https://checkout.stripe.com/mock-session' };
+    },
+
+    // Stripe Integration
+    stripe: null,
+
+    async initStripe() {
+        if (this.stripe) return this.stripe;
+        // REPLACE WITH YOUR PUBLISHABLE KEY
+        this.stripe = await Stripe('pk_test_51SpXtuRyje2bzRMJQsYZUcCo5zWLxfxc3AzWXr1vjUKilaJd3EnXpogRHHK3EFdzqP8ngcngAne2ZlLjrqbxSOx100MUujp74A');
+        return this.stripe;
+    },
+
+    // Create Payment Intent (Client-side mock for demo purposes if backend not ready)
+    // In production, this MUST be a call to Supabase Edge Function
+    async createPaymentIntent(amount) {
+        // Return a mock result since we don't have a backend function running yet
+        // In a real flow:
+        // const { data, error } = await supabase.functions.invoke('create-payment-intent', { body: { amount } });
+        // return data.clientSecret;
+
+        console.warn('Using MOCK Payment Intent. Payments will not be processed by Stripe real servers.');
+        return 'mock_secret_client_demo';
+    },
+
+    async confirmPayment(elements) {
+        if (!this.stripe) await this.initStripe();
+
+        // In real flow:
+        // const result = await this.stripe.confirmPayment({
+        //    elements,
+        //    confirmParams: { return_url: window.location.origin + '/booking-success' },
+        //    redirect: 'if_required' 
+        // });
+
+        // Mocking Success for Demo
+        return { paymentIntent: { status: 'succeeded' } };
     }
 };

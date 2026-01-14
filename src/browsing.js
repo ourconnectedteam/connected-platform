@@ -121,28 +121,25 @@ function createCard(type, details, user) {
         subtext = 'Tutor';
         priceInfo = `<div class="price">$${details.hourly_rate}<span>/hr</span></div>`;
         actionBtn = `
-            <div style="display: flex; gap: 8px;">
-                <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Tutor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm">Book</a>
-                <button class="btn btn-secondary btn-sm" onclick="startChat('${user.id}')">Message</button>
-            </div>`;
+            <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Tutor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm btn-wide">Book</a>
+            <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
+            <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     } else if (type === 'counselor') {
         details.specialties?.forEach(spec => tagsHtml += `<span class="tag">${spec}</span>`);
         subtext = 'Counselor';
-        priceInfo = `<div class="price">$${details.hourly_rate}<span>/hr</span></div>`;
+        priceInfo = `<div class="price">$${details.hourly_rate || '?'}<span>/hr</span></div>`;
         actionBtn = `
-            <div style="display: flex; gap: 8px;">
-                <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Counselor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm">Book</a>
-                <button class="btn btn-secondary btn-sm" onclick="startChat('${user.id}')">Message</button>
-            </div>`;
+            <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Counselor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm btn-wide">Book</a>
+            <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
+            <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     } else { // Student
         details.ib_subjects?.forEach(sub => tagsHtml += `<span class="tag">${sub}</span>`);
         subtext = details.ib_status || 'Student';
         priceInfo = ''; // No price for students
         actionBtn = `
-            <div style="display: flex; gap: 8px;">
-                <button class="btn btn-primary btn-sm" onclick="sendConnectionRequest('${user.id}')">Connect</button>
-                <button class="btn btn-secondary btn-sm" onclick="startChat('${user.id}')">Message</button>
-            </div>`;
+            <button class="btn btn-primary btn-sm btn-wide" onclick="sendConnectionRequest('${user.id}')">Connect</button>
+            <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
+            <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     }
 
     const verifiedBadge = user.verified ? `
@@ -178,7 +175,6 @@ function createCard(type, details, user) {
 
             <div class="card-actions">
                 ${actionBtn}
-                <button class="btn btn-secondary btn-sm" onclick="alert('Profile Details view coming soon!')">View Profile</button>
             </div>
         </div>
     `;
@@ -221,7 +217,7 @@ window.sendConnectionRequest = async (receiverId) => {
 window.startChat = async (receiverId) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        alert('Please log in to message.');
+        window.location.href = '/src/auth.html#login';
         return;
     }
 

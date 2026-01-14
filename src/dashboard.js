@@ -82,7 +82,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         container.innerHTML = `
             <div class="chat-layout">
                 <div class="chat-sidebar">
-                    <div style="padding: 16px; border-bottom: 1px solid #E5E5E5; font-weight: 600;">Messages</div>
+                    <div class="chat-sidebar-header">Messages</div>
                     <div class="chat-list">
                         ${conversations.map(c => `
                             <div class="chat-item" data-id="${c.id}">
@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
                 <div id="chat-messages" class="chat-main">
-                    <div class="chat-empty">Select a conversation to start chatting</div>
+                    <div class="chat-empty">Loading conversation...</div>
                 </div>
             </div>
         `;
@@ -108,14 +108,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             item.addEventListener('click', () => {
                 container.querySelectorAll('.chat-item').forEach(i => i.classList.remove('active'));
                 item.classList.add('active');
-                loadChat(item.dataset.id);
+                const matchedConv = conversations.find(c => c.id === item.dataset.id);
+                loadChat(item.dataset.id, matchedConv?.otherUser);
             });
         });
+
+        // Auto-select first conversation
+        if (conversations.length > 0) {
+            const firstItem = container.querySelector('.chat-item');
+            if (firstItem) {
+                firstItem.classList.add('active');
+                const matchedConv = conversations.find(c => c.id === firstItem.dataset.id);
+                loadChat(firstItem.dataset.id, matchedConv?.otherUser);
+            }
+        }
     }
 
-    async function loadChat(convId) {
+    async function loadChat(convId, otherUser) {
         const chatArea = document.getElementById('chat-messages');
         if (!chatArea) return;
+
+        // Try to find otherUser from DOM if not passed (e.g. click handler)
+        if (!otherUser) {
+            // We can't easily get it unless we stored it. 
+            // But wait, the click handler has access to data attributes if we added them, 
+            // or we can just fetch the conversation again or pass it from the click handler.
+            // Better approach: Update the click handler closure.
+        }
 
         // Show loading state elegantly
         chatArea.innerHTML = '<div class="chat-empty">Loading messages...</div>';
@@ -126,19 +145,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Mark as Read
         await messaging.markAsRead(convId, user.id);
 
-        // Get other user details for header (Optimized: passed from list or fetch again? Fetching safe)
-        // For speed, we could assume list data, but let's fetch quick or just show messages.
-        // Actually, we need the header name. Let's fetch the conversation members again or store it.
-        // Simplification: We'll render messages directly.
-
         chatArea.innerHTML = `
-            <div class="chat-header">
-                <span>Chat</span>  <!-- Ideally show name here -->
+            <div class="chat-main-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <img src="${otherUser?.avatar_url || 'https://placehold.co/48'}" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                    <div>
+                        <div style="font-weight: 600; font-size: 1rem;">${otherUser?.full_name || 'Chat'}</div>
+                        <div style="font-size: 0.8rem; color: #65676B;">${otherUser?.role ? otherUser.role.charAt(0).toUpperCase() + otherUser.role.slice(1) : ''}</div>
+                    </div>
+                </div>
+                <!-- Optional: Info Icon or Call Button here -->
             </div>
             <div class="msg-list" id="msg-scroll-area">
                 ${msgs.map(m => `
                     <div class="msg-bubble ${m.sender_id === user.id ? 'msg-sent' : 'msg-received'}">
                         ${m.body}
+                        <!-- Hover time is handled by CSS now -->
                         <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                 `).join('')}
@@ -162,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Optimistic UI update could go here
             await messaging.sendMessage(convId, user.id, text);
             input.value = '';
-            loadChat(convId); // Reload
+            loadChat(convId, otherUser); // Reload with same user info
         };
 
         document.getElementById('send-btn').addEventListener('click', handleSend);
@@ -230,32 +252,108 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
+        // Fetch Role Specific Data
+        let roleData = {};
+        if (profile.role === 'student') {
+            const { data } = await supabase.from('student_profiles').select('*').eq('user_id', user.id).single();
+            roleData = data || {};
+        } else if (profile.role === 'tutor') {
+            const { data } = await supabase.from('tutor_profiles').select('*').eq('user_id', user.id).single();
+            roleData = data || {};
+        } else if (profile.role === 'counselor') {
+            const { data } = await supabase.from('counselor_profiles').select('*').eq('user_id', user.id).single();
+            roleData = data || {};
+        }
+
+        // Generate Role Specific Query Fields
+        let extraFieldsHTML = '';
+        if (profile.role === 'student') {
+            extraFieldsHTML = `
+                <div class="profile-section-title" style="margin-top: 24px;">Academic Profile</div>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Grade Level</label>
+                        <select id="prof-grade" class="form-select">
+                            <option value="">Select Grade</option>
+                            <option value="Pre-IB" ${roleData.grade_level === 'Pre-IB' ? 'selected' : ''}>Pre-IB</option>
+                            <option value="IB1 (Year 12)" ${roleData.grade_level === 'IB1 (Year 12)' ? 'selected' : ''}>IB1 (Year 12)</option>
+                            <option value="IB2 (Year 13)" ${roleData.grade_level === 'IB2 (Year 13)' ? 'selected' : ''}>IB2 (Year 13)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Academic Interests (comma separated)</label>
+                        <input type="text" id="prof-interests" class="form-input" value="${roleData.academic_interests?.join(', ') || ''}" placeholder="e.g. Math, Physics, Art">
+                    </div>
+                </div>
+            `;
+        } else if (profile.role === 'tutor' || profile.role === 'counselor') {
+            const subjectLabel = profile.role === 'tutor' ? 'Subjects Taught' : 'Specializations';
+            const subVal = profile.role === 'tutor' ? roleData.subjects : roleData.specialization;
+
+            extraFieldsHTML = `
+                <div class="profile-section-title" style="margin-top: 24px;">Professional Details</div>
+                <div class="form-grid-3">
+                    <div class="form-group">
+                        <label>Hourly Rate ($)</label>
+                        <input type="number" id="prof-rate" class="form-input" value="${roleData.hourly_rate || ''}" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Years of Experience</label>
+                        <input type="number" id="prof-experience" class="form-input" value="${roleData.years_experience || ''}" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label>${subjectLabel}</label>
+                        <input type="text" id="prof-subjects" class="form-input" value="${subVal?.join(', ') || ''}" placeholder="e.g. Math AA, Chemistry">
+                    </div>
+                </div>
+            `;
+        }
+
         container.innerHTML = `
-            <form id="profile-form" style="max-width: 500px; display: flex; flex-direction: column; gap: 16px;">
-                <div class="form-group">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Full Name</label>
-                    <input type="text" id="prof-name" class="form-input" value="${profile.full_name || ''}" required>
-                </div>
-                <div class="form-group">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Role</label>
-                    <input type="text" class="form-input" value="${profile.role}" disabled style="background: #f5f5f5; color: #888;">
-                </div>
-                <div class="form-group">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Bio</label>
-                    <textarea id="prof-bio" class="form-textarea" rows="4">${profile.bio || ''}</textarea>
-                </div>
-                <div class="form-group">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Location</label>
-                    <input type="text" id="prof-location" class="form-input" value="${profile.location || ''}">
-                </div>
-                 <div class="form-group">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">Avatar URL</label>
-                    <input type="text" id="prof-avatar" class="form-input" value="${profile.avatar_url || ''}">
-                    <!-- Ideally file upload, but URL for now is easier -->
-                </div>
-                <button type="submit" class="btn btn-primary" id="btn-save-profile">Save Changes</button>
-                <p id="profile-msg" style="margin-top: 8px; display: none;"></p>
-            </form>
+            <div class="profile-card-container">
+                <form id="profile-form">
+                    <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 24px; color: var(--text-primary);">Edit Profile</h3>
+                    
+                    <div class="profile-section-title">Personal Information</div>
+                    
+                    <div class="avatar-upload-row" style="margin-bottom: 24px;">
+                        <img src="${profile.avatar_url || 'https://placehold.co/100'}" class="avatar-preview" id="avatar-preview-img">
+                        <div style="flex: 1;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Avatar URL</label>
+                            <input type="text" id="prof-avatar" class="form-input" value="${profile.avatar_url || ''}" placeholder="https://example.com/image.jpg">
+                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Paste an image address for now.</div>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Full Name</label>
+                            <input type="text" id="prof-name" class="form-input" value="${profile.full_name || ''}" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <input type="text" class="form-input" value="${profile.role}" disabled style="background: #f5f5f5; color: #888; cursor: not-allowed;">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label>Location</label>
+                        <input type="text" id="prof-location" class="form-input" value="${profile.location || ''}" placeholder="City, Country">
+                    </div>
+
+                    <div class="form-group" style="margin-top: 16px;">
+                        <label>Bio</label>
+                        <textarea id="prof-bio" class="form-textarea" rows="3" placeholder="Tell us about yourself...">${profile.bio || ''}</textarea>
+                    </div>
+
+                    ${extraFieldsHTML}
+
+                    <div class="form-actions-right">
+                        <p id="profile-msg" style="margin-right: 16px; align-self: center; display: none; font-weight: 500;"></p>
+                        <button type="submit" class="btn btn-primary" id="btn-save-profile" style="min-width: 140px;">Save Changes</button>
+                    </div>
+                </form>
+            </div>
         `;
 
         const form = document.getElementById('profile-form');
@@ -268,7 +366,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.disabled = true;
             msg.style.display = 'none';
 
-            const updates = {
+            // 1. Update Base Profile
+            const baseUpdates = {
                 full_name: document.getElementById('prof-name').value,
                 bio: document.getElementById('prof-bio').value,
                 location: document.getElementById('prof-location').value,
@@ -276,27 +375,70 @@ document.addEventListener('DOMContentLoaded', async () => {
                 updated_at: new Date().toISOString()
             };
 
-            const { error } = await supabase
+            const { error: baseError } = await supabase
                 .from('profiles')
-                .update(updates)
+                .update(baseUpdates)
                 .eq('id', user.id);
+
+            if (baseError) {
+                console.error(baseError);
+                showMsg('Error saving base profile.', 'red');
+                btn.disabled = false;
+                btn.textContent = 'Save Changes';
+                return;
+            }
+
+            // 2. Update Role Specific Profile
+            let roleError = null;
+            if (profile.role === 'student') {
+                const grade = document.getElementById('prof-grade').value;
+                const interests = document.getElementById('prof-interests').value.split(',').map(s => s.trim()).filter(Boolean);
+
+                const { error } = await supabase.from('student_profiles').upsert({
+                    user_id: user.id,
+                    grade_level: grade,
+                    academic_interests: interests
+                });
+                roleError = error;
+            } else if (profile.role === 'tutor' || profile.role === 'counselor') {
+                const rate = document.getElementById('prof-rate').value;
+                const exp = document.getElementById('prof-experience').value;
+                const subs = document.getElementById('prof-subjects').value.split(',').map(s => s.trim()).filter(Boolean);
+
+                const table = profile.role === 'tutor' ? 'tutor_profiles' : 'counselor_profiles';
+                const payload = {
+                    user_id: user.id,
+                    hourly_rate: rate ? parseFloat(rate) : null,
+                    years_experience: exp ? parseInt(exp) : 0
+                };
+                if (profile.role === 'tutor') payload.subjects = subs;
+                else payload.specialization = subs;
+
+                const { error } = await supabase.from(table).upsert(payload);
+                roleError = error;
+            }
 
             btn.disabled = false;
             btn.textContent = 'Save Changes';
 
-            if (error) {
-                console.error(error);
-                msg.textContent = 'Error saving profile.';
-                msg.style.color = 'red';
-                msg.style.display = 'block';
+            if (roleError) {
+                console.error(roleError);
+                showMsg('Profile saved, but specific details failed.', 'orange');
             } else {
-                msg.textContent = 'Profile updated successfully!';
-                msg.style.color = 'green';
-                msg.style.display = 'block';
-
+                showMsg('Profile updated successfully!', 'green');
                 // Update header name specific to DOM
                 const nameEl = document.getElementById('user-name');
-                if (nameEl) nameEl.textContent = `Welcome back, ${updates.full_name.split(' ')[0]}`;
+                if (nameEl) nameEl.textContent = `Welcome back, ${baseUpdates.full_name.split(' ')[0]}`;
+
+                // Update avatar preview
+                const previewImg = document.getElementById('avatar-preview-img');
+                if (previewImg) previewImg.src = baseUpdates.avatar_url || 'https://placehold.co/100';
+            }
+
+            function showMsg(text, color) {
+                msg.textContent = text;
+                msg.style.color = color;
+                msg.style.display = 'block';
             }
         });
     }
@@ -320,7 +462,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     } else {
         // Default to first tab (often Bookings/Upcoming) if no param
-        // Existing logic in HTML usually sets 'active' class, so do nothing or force click
+        const activeTabBtn = document.querySelector('.tab-btn.active');
+        if (activeTabBtn) {
+            // Trigger load function for the default active tab
+            if (activeTabBtn.dataset.tab === 'bookings') loadBookings();
+            if (activeTabBtn.dataset.tab === 'messages') loadConversations();
+            if (activeTabBtn.dataset.tab === 'connections') loadConnections();
+            if (activeTabBtn.dataset.tab === 'requests') loadRequests();
+            if (activeTabBtn.dataset.tab === 'profile') loadProfile();
+        } else {
+            // Fallback: Default to bookings if no active class found (though HTML usually has one)
+            loadBookings();
+        }
     }
 
     // Populate User Info

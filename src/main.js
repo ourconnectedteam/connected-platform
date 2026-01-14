@@ -2,6 +2,7 @@ import { auth } from './lib/auth.js';
 import { booking as bookingLib } from './lib/booking.js';
 import { renderBrowsingPage } from './browsing.js';
 import { messaging } from './lib/messaging.js';
+import { email } from './lib/email.js'; // Import Email Helper
 
 // Global Auth Check
 (async function initApp() {
@@ -36,6 +37,21 @@ import { messaging } from './lib/messaging.js';
                 if (profile.role === 'student') dashboardLink = '/dashboard-student.html';
                 else if (profile.role === 'tutor') dashboardLink = '/dashboard-tutor.html';
                 else if (profile.role === 'counselor') dashboardLink = '/counselor-dashboard.html';
+
+                // Update Landing Page Hero Content (If on index.html)
+                if (path === '/' || path.includes('index.html')) {
+                    const subheadline = document.querySelector('.subheadline');
+                    const ctaGroup = document.querySelector('.cta-group');
+
+                    if (subheadline) subheadline.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}! Ready to continue your journey?`;
+                    if (ctaGroup) {
+                        ctaGroup.innerHTML = `
+                            <a href="tutors.html" class="btn btn-primary">Find a Tutor</a>
+                            <a href="counselors.html" class="btn btn-secondary">Find a Counselor</a>
+                        `;
+                    }
+                }
+
             } else {
                 console.warn('No profile found for user:', user.id);
             }
@@ -213,7 +229,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const indicators = document.querySelectorAll('.booking-step-indicator-item');
 
     // Next Step Helper
-    window.goToStep = function (stepNumber) {
+    let stripeElements = null;
+
+    window.goToStep = async function (stepNumber) {
         // Hide all steps
         steps.forEach(s => s.style.display = 'none');
         // Show target step
@@ -228,6 +246,69 @@ document.addEventListener('DOMContentLoaded', () => {
                 ind.classList.remove('active');
             }
         });
+
+        // Step 3 Specific Logic (Stripe)
+        if (stepNumber === 3) {
+            const stripe = await bookingLib.initStripe();
+            if (stripe && !stripeElements) {
+                // Create Mock Payment Intent
+                const clientSecret = await bookingLib.createPaymentIntent(6000); // $60.00
+
+                if (clientSecret === 'mock_secret_client_demo') {
+                    document.getElementById('payment-element').innerHTML = `
+                        <div style="padding: 20px; text-align: center;">
+                            <p style="color: #666; margin-bottom: 15px;">Stripe Demo Mode</p>
+                            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; border: 1px solid #ddd; max-width: 300px; margin: 0 auto;">
+                                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                                    <div style="width: 20px; height: 14px; background: #ddd; border-radius: 2px;"></div>
+                                    <span style="font-family: monospace;">**** **** **** 4242</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="font-family: monospace;">12/24</span>
+                                    <span style="font-family: monospace;">123</span>
+                                </div>
+                            </div>
+                            <p style="font-size: 0.8rem; color: #888; margin-top: 10px;">Click "Pay & Confirm" to simulate successful payment.</p>
+                        </div>
+                     `;
+                } else {
+                    // Real Stripe Logic
+                    const options = { clientSecret, appearance: { theme: 'stripe' } };
+                    stripeElements = stripe.elements(options);
+                    const paymentElement = stripeElements.create('payment');
+                    paymentElement.mount('#payment-element');
+                }
+            }
+
+            // Populate Confirmation Details
+            const summary = document.getElementById('booking-confirmation-details');
+            if (summary) {
+                const formData = new FormData(document.getElementById('booking-form-details'));
+                summary.innerHTML = `
+                    <div style="background: #f9f9f9; padding: 20px; border-radius: 12px; margin-bottom: 24px;">
+                        <h4 style="margin-bottom: 12px; font-weight: 600;">Booking Summary</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.95rem;">
+                            <div>
+                                <span style="color: #666;">Student</span>
+                                <div style="font-weight: 500;">${formData.get('fullname')}</div>
+                            </div>
+                            <div>
+                                <span style="color: #666;">Subject</span>
+                                <div style="font-weight: 500;">${formData.get('subject') || 'Math'}</div>
+                            </div>
+                            <div>
+                                <span style="color: #666;">Time</span>
+                                <div style="font-weight: 500;">Coming Soon (Step 2)</div> 
+                            </div>
+                             <div>
+                                <span style="color: #666;">Price</span>
+                                <div style="font-weight: 600; color: #007AFF;">$60.00</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
 
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -388,64 +469,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // 5. Submit Booking
+    // 5. Submit Booking (Paid)
     const btnConfirm = document.getElementById('btn-confirm-booking');
-    if (btnConfirm) { // Note: I changed the ID in HTML in previous step, wait, I need to make sure I actually changed the ID in HTML or select by something else. 
-        // In the previous step I removed 'next-step' class and added ID 'btn-confirm-booking'.
-
+    if (btnConfirm) {
         btnConfirm.addEventListener('click', async () => {
-            const user = await auth.getUser();
-            if (!user) {
-                alert('You must be logged in to book a session.');
-                window.location.href = '/src/auth.html';
-                return;
-            }
-
-            btnConfirm.textContent = 'Processing...';
+            const originalText = btnConfirm.textContent;
+            btnConfirm.textContent = 'Processing Payment...';
             btnConfirm.disabled = true;
 
-            // Gather Data
-            const urlParams = new URLSearchParams(window.location.search);
-            const providerId = urlParams.get('providerId');
-
-            const formDetails = document.getElementById('booking-form-details');
-            const formData = new FormData(formDetails);
-
-            const bookingData = {
-                student_id: user.id,
-                provider_id: providerId, // This might be null if not in URL, need to handle
-                slot_id: window.selectedSlotId, // Set by renderCalendar
-                scheduled_start: window.selectedIsoDate,
-                scheduled_end: calculateEndTime(window.selectedIsoDate, formData.get('duration')), // Need helper
-                price: parseFloat(urlParams.get('price')) || 0,
-                notes: formData.get('notes')
-                // status default is pending_payment
-            };
-
-            if (!bookingData.provider_id || !bookingData.slot_id) {
-                alert('Missing provider or time slot information.');
-                btnConfirm.textContent = 'Confirm Booking';
-                btnConfirm.disabled = false;
-                return;
-            }
-
-            console.log('Submitting Booking:', bookingData);
-
             try {
-                const { data, error } = await bookingLib.createBooking(bookingData);
+                // 1. Confirm Payment (using Stripe or Mock)
+                const { error: paymentError, paymentIntent } = await bookingLib.confirmPayment(stripeElements);
 
-                if (error) {
-                    console.error('Booking Error:', error);
-                    alert('Failed to create booking: ' + error.message);
-                    btnConfirm.textContent = 'Confirm Booking';
-                    btnConfirm.disabled = false;
-                } else {
-                    // Success
-                    goToStep(4);
+                if (paymentError) {
+                    throw new Error(paymentError.message);
                 }
+
+                if (paymentIntent && paymentIntent.status === 'succeeded') {
+                    // 2. Create Booking in DB
+                    // Gather details
+                    const formData = new FormData(document.getElementById('booking-form-details'));
+                    const providerId = new URLSearchParams(window.location.search).get('providerId');
+                    const user = await auth.getUser();
+
+                    // Mock booking creation if backend fails or for demo
+                    const bookingDetails = {
+                        student_id: user?.id,
+                        provider_id: providerId,
+                        scheduled_start: window.selectedIsoDate || new Date().toISOString(),
+                        scheduled_end: new Date((new Date(window.selectedIsoDate).getTime() + 3600000)).toISOString(),
+                        price: 60.00,
+                        notes: formData.get('notes')
+                    };
+
+                    const { error: bookingError } = await bookingLib.createBooking(bookingDetails);
+                    if (bookingError) console.error('Booking DB error (non-fatal for demo):', bookingError);
+
+                    // Success!
+
+                    // Send Confirmation Email (Async)
+                    const providerName = new URLSearchParams(window.location.search).get('name') || 'Tutor';
+                    email.sendBookingConfirmation({
+                        studentName: formData.get('fullname') || 'Student',
+                        providerName: providerName,
+                        date: window.selectedIsoDate ? new Date(window.selectedIsoDate).toDateString() : 'N/A',
+                        time: window.selectedIsoDate ? new Date(window.selectedIsoDate).toLocaleTimeString() : 'N/A',
+                        link: 'https://zoom.us/j/demo-link'
+                    }).catch(err => console.error('Failed to send email:', err));
+
+                    goToStep(4);
+                } else {
+                    throw new Error('Payment failed. Please try again.');
+                }
+
             } catch (err) {
-                console.error('Unexpected error:', err);
-                alert('An unexpected error occurred.');
-                btnConfirm.textContent = 'Confirm Booking';
+                console.error(err);
+                alert(`Error: ${err.message}`);
+                btnConfirm.textContent = originalText;
                 btnConfirm.disabled = false;
             }
         });

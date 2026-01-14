@@ -136,6 +136,7 @@
 
     <script type="module">
         import { supabase } from '/src/lib/supabase.js';
+        import { email } from '/src/lib/email.js';
 
         // Helper to toggle fields
         function updateRoleFields(role) {
@@ -267,8 +268,18 @@
                     });
                 }
 
-                window.location.href = role === 'student' ? '/dashboard-student.html' :
-                    role === 'tutor' ? '/dashboard-tutor.html' : '/counselor-dashboard.html';
+                // Send Welcome Email (Async)
+                email.sendWelcomeEmail({
+                    name: fullName,
+                    email: user.email
+                }).catch(err => console.error('Failed to send welcome email:', err));
+
+                // Redirect
+                setTimeout(() => {
+                    if (role === 'student') window.location.href = '/dashboard-student.html';
+                    else if (role === 'tutor') window.location.href = '/dashboard-tutor.html';
+                    else if (role === 'counselor') window.location.href = '/counselor-dashboard.html';
+                }, 1000);
             }
         });
     </script>
