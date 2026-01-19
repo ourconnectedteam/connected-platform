@@ -2,6 +2,7 @@ import { auth } from './lib/auth.js';
 import { supabase } from './lib/supabase.js';
 import { messaging } from './lib/messaging.js';
 import { connections } from './lib/connections.js';
+import { booking } from './lib/booking.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Tab Logic
@@ -52,15 +53,38 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        list.innerHTML = bookings.map(b => `
+        const isStudent = role === 'student_id'; // If I am filtering by student_id, I am a provider? No.
+        // Wait, logic check:
+        // const role = (document.title.includes('Tutor') ... ) ? 'provider_id' : 'student_id';
+        // If I am a Student, role is 'student_id'. available col is 'provider_id'.
+
+        list.innerHTML = bookings.map(b => {
+            const otherUser = b.profiles; // The profile of the OTHER person
+            // If I am student, I want to message provider (b.provider_id)
+            // If I am tutor, I want to message student (b.student_id)
+            const targetId = isStudent ? b.provider_id : b.student_id;
+
+            // Only show Cancel if status is not cancelled
+            const showCancel = b.status !== 'cancelled' && b.status !== 'completed';
+
+            return `
             <div class="booking-item">
-                <div>
-                    <h4 style="font-weight: 600; margin-bottom: 4px;">${new Date(b.scheduled_start).toLocaleDateString()} @ ${new Date(b.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</h4>
-                    <p style="color: grey; font-size: 0.9rem;">With ${b.profiles.full_name}</p>
+                <div style="flex: 1;">
+                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                        <h4 style="font-weight: 600; margin-bottom: 4px;">
+                            ${new Date(b.scheduled_start).toLocaleDateString()} @ ${new Date(b.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </h4>
+                        <div class="status-badge status-${b.status}" id="status-${b.id}">${b.status.replace('_', ' ')}</div>
+                    </div>
+                    <p style="color: grey; font-size: 0.9rem; margin-bottom: 8px;">With ${otherUser ? otherUser.full_name : 'User'}</p>
+                    
+                    <div class="action-btn-group">
+                        <button class="btn btn-sm btn-outline" onclick="openMsg('${targetId}')">Message</button>
+                        ${showCancel ? `<button class="btn btn-sm btn-danger" onclick="confirmCancel('${b.id}')">Cancel Session</button>` : ''}
+                    </div>
                 </div>
-                <div class="status-badge status-${b.status}">${b.status.replace('_', ' ')}</div>
             </div>
-        `).join('');
+        `}).join('');
     }
 
     async function loadConversations() {
@@ -485,4 +509,90 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (nameEl) nameEl.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}`;
         }
     }
+
+    // --- Global Actions (Message & Cancel) ---
+
+    // 1. Message Provider/Student
+    window.openMsg = async (targetUserId) => {
+        // Switch to message tab
+        const msgTab = document.querySelector('.tab-btn[data-tab="messages"]');
+        if (msgTab) msgTab.click();
+
+        // Start/Find conversation
+        const currentUser = (await supabase.auth.getUser()).data.user;
+        if (!currentUser) return;
+
+        const { data: conv, error } = await messaging.startConversation(currentUser.id, targetUserId);
+
+        if (conv) {
+            // We need to wait for the UI to load (loadConversations is async and triggered by click)
+            // Simple hack: poll for the item or reload
+            setTimeout(() => {
+                // Try to click the item in the list if it exists
+                const item = document.querySelector(`.chat-item[data-id="${conv.id}"]`);
+                if (item) item.click();
+                else {
+                    // If list didn't load it yet (new conv), force reload
+                    loadConversations().then(() => {
+                        const newItem = document.querySelector(`.chat-item[data-id="${conv.id}"]`);
+                        if (newItem) newItem.click();
+                    });
+                }
+            }, 500);
+        }
+    };
+
+    // 2. Cancel Modal Logic
+    // Inject Modal HTML if not exists
+    if (!document.getElementById('cancel-modal')) {
+        const modalHTML = `
+            <div id="cancel-modal" class="modal-overlay">
+                <div class="modal-card">
+                    <div class="modal-icon">!</div>
+                    <div class="modal-h3">Cancel Session?</div>
+                    <p class="modal-p">Are you sure you want to cancel this booking? This action cannot be undone.</p>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal()">No, Keep it</button>
+                        <button class="btn btn-danger" id="confirm-cancel-btn">Yes, Cancel</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+
+    let bookingToCancel = null;
+
+    window.confirmCancel = (bookingId) => {
+        bookingToCancel = bookingId;
+        document.getElementById('cancel-modal').classList.add('active');
+    };
+
+    window.closeModal = () => {
+        document.getElementById('cancel-modal').classList.remove('active');
+        bookingToCancel = null;
+    };
+
+    document.getElementById('confirm-cancel-btn').addEventListener('click', async () => {
+        if (!bookingToCancel) return;
+
+        const btn = document.getElementById('confirm-cancel-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Cancelling...';
+        btn.disabled = true;
+
+        const { error } = await booking.cancelBooking(bookingToCancel);
+
+        btn.textContent = originalText;
+        btn.disabled = false;
+        closeModal();
+
+        if (error) {
+            alert('Failed to cancel booking');
+        } else {
+            // Update UI
+            loadBookings(); // Refresh list
+        }
+    });
+
 });

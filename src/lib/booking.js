@@ -84,5 +84,22 @@ export const booking = {
 
         // Mocking Success for Demo
         return { paymentIntent: { status: 'succeeded' } };
+    },
+
+    // Cancel Booking
+    async cancelBooking(bookingId) {
+        const { data, error } = await supabase
+            .from('bookings')
+            .update({ status: 'cancelled' })
+            .eq('id', bookingId)
+            .select()
+            .single();
+
+        // Also free up the slot?
+        // In a real app we would want to free the slot in 'availability_slots'
+        // But we need the slot_id from the booking first or a trigger.
+        // For now, let's just mark booking as cancelled.
+
+        return { data, error };
     }
 };
