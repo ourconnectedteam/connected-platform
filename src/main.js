@@ -61,6 +61,35 @@ import { initParallax } from './components/parallax.js';
                 // 2. Dynamic Testimonials Injection
                 const ctaSection = document.getElementById('join');
                 if (ctaSection) {
+                    // 10 Unique Testimonials
+                    const testimonials = [
+                        { text: "James helped me boost my Math AA grade from a 4 to a 7 in just two months!", author: "Sarah Jenkins", role: "IB Student • 43/45", initial: "S" },
+                        { text: "My university counselor was a lifesaver. Got into my dream UK uni!", author: "Michael Chen", role: "Accepted to UCL", initial: "M" },
+                        { text: "Finding a study buddy for HL Physics made revision much less lonely.", author: "Elena Rodriguez", role: "IB Student • Madrid", initial: "E" },
+                        { text: "The dashboard makes managing lessons easy. I can focus on teaching.", author: "David Kim", role: "Chemistry Tutor", initial: "D" },
+                        { text: "Finally understood Electric Fields thanks to my tutor. Huge relief.", author: "Jessica Wu", role: "Physics HL Student", initial: "J" },
+                        { text: "The essay structure tips for English A were gold. Recommended!", author: "Thomas Müller", role: "IB Student • Berlin", initial: "T" },
+                        { text: "Bio HL notes I shared got me connected with great study partners.", author: "Aisha Khan", role: "Biology HL", initial: "A" },
+                        { text: "Real-world Econ examples helped me ace my IA. Thanks!", author: "Lucas Silva", role: "Economics SL", initial: "L" },
+                        { text: "Super simple booking process. No back-and-forth emails.", author: "Ryan O'Connell", role: "Business Mgmt Tutor", initial: "R" },
+                        { text: "This platform is exactly what I wish I had in DP1. Amazing.", author: "Sophie Dubois", role: "IB Alumni • 44 Points", initial: "S" }
+                    ];
+
+                    // Generate Cards HTML (Duplicate array for seamless infinite scroll)
+                    const cardsHtml = [...testimonials, ...testimonials].map(t => `
+                        <div class="testimonial-card">
+                            <div class="t-rating">★★★★★</div>
+                            <p class="t-text">"${t.text}"</p>
+                            <div class="t-author">
+                                <div class="t-avatar">${t.initial}</div>
+                                <div class="t-info">
+                                    <h4>${t.author}</h4>
+                                    <p>${t.role}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
                     ctaSection.innerHTML = `
                         <div class="container fade-in-up visible">
                             <div class="testimonials-header">
@@ -68,53 +97,8 @@ import { initParallax } from './components/parallax.js';
                                 <p class="text-secondary">Join 1,000+ IB students crushing their exams.</p>
                             </div>
                             <div class="testimonials-slider">
-                                <!-- Card 1 -->
-                                <div class="testimonial-card">
-                                    <div class="t-rating">★★★★★</div>
-                                    <p class="t-text">"James helped me boost my Math AA grade from a 4 to a 7 in just two months! He explained concepts way better than my teacher."</p>
-                                    <div class="t-author">
-                                        <div class="t-avatar">S</div>
-                                        <div class="t-info">
-                                            <h4>Sarah Jenkins</h4>
-                                            <p>IB Student • scored 43/45</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Card 2 -->
-                                <div class="testimonial-card">
-                                    <div class="t-rating">★★★★★</div>
-                                    <p class="t-text">"My university counselor was a lifesaver. She helped me structure my personal statement and I got into my dream UK uni!"</p>
-                                    <div class="t-author">
-                                        <div class="t-avatar">M</div>
-                                        <div class="t-info">
-                                            <h4>Michael Chen</h4>
-                                            <p>Accepted to UCL</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Card 3 -->
-                                <div class="testimonial-card">
-                                    <div class="t-rating">★★★★★</div>
-                                    <p class="t-text">"Finding a study buddy for HL Physics made revision so much less lonely. We kept each other accountable every week."</p>
-                                    <div class="t-author">
-                                        <div class="t-avatar">E</div>
-                                        <div class="t-info">
-                                            <h4>Elena Rodriguez</h4>
-                                            <p>IB Student • Madrid</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- Card 4 -->
-                                <div class="testimonial-card">
-                                    <div class="t-rating">★★★★★</div>
-                                    <p class="t-text">"The dashboard makes managing lessons so easy. I can focus on teaching instead of scheduling emails."</p>
-                                    <div class="t-author">
-                                        <div class="t-avatar">D</div>
-                                        <div class="t-info">
-                                            <h4>David Kim</h4>
-                                            <p>Chemistry Tutor</p>
-                                        </div>
-                                    </div>
+                                <div class="testimonial-track">
+                                    ${cardsHtml}
                                 </div>
                             </div>
                         </div>
