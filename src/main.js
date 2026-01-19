@@ -48,12 +48,79 @@ import { initParallax } from './components/parallax.js';
             if (path === '/' || path.includes('index.html')) {
                 const subheadline = document.querySelector('.subheadline');
                 const ctaGroup = document.querySelector('.cta-group');
+
+                // 1. Update Hero Greeting
                 if (subheadline) subheadline.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}! Ready to continue your journey?`;
                 if (ctaGroup) {
                     ctaGroup.innerHTML = `
                         <a href="tutors.html" class="btn btn-primary">Find a Tutor</a>
                         <a href="counselors.html" class="btn btn-secondary">Find a Counselor</a>
                     `;
+                }
+
+                // 2. Dynamic Testimonials Injection
+                const ctaSection = document.getElementById('join');
+                if (ctaSection) {
+                    ctaSection.innerHTML = `
+                        <div class="container fade-in-up">
+                            <div class="testimonials-header">
+                                <h2>Success Stories</h2>
+                                <p class="text-secondary">Join 1,000+ IB students crushing their exams.</p>
+                            </div>
+                            <div class="testimonials-slider">
+                                <!-- Card 1 -->
+                                <div class="testimonial-card">
+                                    <div class="t-rating">★★★★★</div>
+                                    <p class="t-text">"James helped me boost my Math AA grade from a 4 to a 7 in just two months! He explained concepts way better than my teacher."</p>
+                                    <div class="t-author">
+                                        <div class="t-avatar">S</div>
+                                        <div class="t-info">
+                                            <h4>Sarah Jenkins</h4>
+                                            <p>IB Student • scored 43/45</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Card 2 -->
+                                <div class="testimonial-card">
+                                    <div class="t-rating">★★★★★</div>
+                                    <p class="t-text">"My university counselor was a lifesaver. She helped me structure my personal statement and I got into my dream UK uni!"</p>
+                                    <div class="t-author">
+                                        <div class="t-avatar">M</div>
+                                        <div class="t-info">
+                                            <h4>Michael Chen</h4>
+                                            <p>Accepted to UCL</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Card 3 -->
+                                <div class="testimonial-card">
+                                    <div class="t-rating">★★★★★</div>
+                                    <p class="t-text">"Finding a study buddy for HL Physics made revision so much less lonely. We kept each other accountable every week."</p>
+                                    <div class="t-author">
+                                        <div class="t-avatar">E</div>
+                                        <div class="t-info">
+                                            <h4>Elena Rodriguez</h4>
+                                            <p>IB Student • Madrid</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Card 4 -->
+                                <div class="testimonial-card">
+                                    <div class="t-rating">★★★★★</div>
+                                    <p class="t-text">"The dashboard makes managing lessons so easy. I can focus on teaching instead of scheduling emails."</p>
+                                    <div class="t-author">
+                                        <div class="t-avatar">D</div>
+                                        <div class="t-info">
+                                            <h4>David Kim</h4>
+                                            <p>Chemistry Tutor</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    ctaSection.classList.remove('cta-section');
+                    ctaSection.classList.add('testimonials-section');
                 }
             }
         }
