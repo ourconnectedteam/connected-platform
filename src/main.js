@@ -62,7 +62,7 @@ import { initParallax } from './components/parallax.js';
                 const ctaSection = document.getElementById('join');
                 if (ctaSection) {
                     ctaSection.innerHTML = `
-                        <div class="container fade-in-up">
+                        <div class="container fade-in-up visible">
                             <div class="testimonials-header">
                                 <h2>Success Stories</h2>
                                 <p class="text-secondary">Join 1,000+ IB students crushing their exams.</p>
