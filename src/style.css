@@ -2146,21 +2146,40 @@ footer {
 }
 
 .testimonials-slider {
-    display: flex;
-    overflow-x: auto;
-    gap: 24px;
-    padding: 24px 5%;
-    /* Side padding for peek effect */
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
-    /* Hide scrollbar Firefox */
-    -ms-overflow-style: none;
-    /* Hide scrollbar IE/Edge */
-    scroll-behavior: smooth;
+    /* Mask Container */
+    overflow: hidden;
+    width: 100%;
+    position: relative;
+    padding: 24px 0;
+    /* Gradient mask to fade edges */
+    -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
 }
 
-.testimonials-slider::-webkit-scrollbar {
-    display: none;
+.testimonial-track {
+    display: flex;
+    gap: 24px;
+    width: max-content;
+    /* Ensure it spans as wide as needed */
+    animation: scroll 60s linear infinite;
+    /* Ensure hardware acceleration */
+    will-change: transform;
+}
+
+/* Pause on hover */
+.testimonial-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes scroll {
+    0% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(-50%);
+        /* Move half the width (since we duplicated the set) */
+    }
 }
 
 .testimonial-card {
