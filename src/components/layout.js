@@ -66,16 +66,36 @@ export async function initLayout() {
         menuBtn.addEventListener('click', () => {
             const isFlex = navLinks.style.display === 'flex';
             navLinks.style.display = isFlex ? 'none' : 'flex';
+
             if (!isFlex) {
+                // OPENING MENU
                 navLinks.style.flexDirection = 'column';
-                navLinks.style.position = 'absolute';
-                navLinks.style.top = '100%';
+                navLinks.style.position = 'fixed'; // Fixed to cover screen
+                navLinks.style.top = '60px';
                 navLinks.style.left = '0';
                 navLinks.style.width = '100%';
-                navLinks.style.background = 'rgba(255,255,255,0.95)';
+                navLinks.style.height = 'calc(100vh - 60px)';
+                navLinks.style.background = 'rgba(255,255,255,0.98)'; // More opacity
                 navLinks.style.padding = '24px';
                 navLinks.style.backdropFilter = 'blur(10px)';
-                navLinks.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                navLinks.style.boxShadow = 'none';
+                navLinks.style.zIndex = '1000';
+                navLinks.style.overflowY = 'auto';
+
+                // Clone Auth Buttons if not already there
+                if (!navLinks.querySelector('.mobile-auth-container')) {
+                    const authContent = document.querySelector('.nav-auth').innerHTML;
+                    const authDiv = document.createElement('div');
+                    authDiv.className = 'mobile-auth-container';
+                    authDiv.style.marginTop = '24px';
+                    authDiv.style.paddingTop = '24px';
+                    authDiv.style.borderTop = '1px solid #eee';
+                    authDiv.style.display = 'flex';
+                    authDiv.style.flexDirection = 'column';
+                    authDiv.style.gap = '12px';
+                    authDiv.innerHTML = authContent;
+                    navLinks.appendChild(authDiv);
+                }
             }
         });
     }
