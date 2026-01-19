@@ -84,12 +84,6 @@ export async function initLayout() {
 
                 // Clone Auth Buttons if not already there
                 if (!navLinks.querySelector('.mobile-auth-container')) {
-                    const authContent = document.querySelector('.nav-auth').innerHTML;
-                    const authDiv = document.createElement('div');
-                    authDiv.className = 'mobile-auth-container';
-                    authDiv.style.marginTop = '24px';
-                    authDiv.style.paddingTop = '24px';
-                    authDiv.style.borderTop = '1px solid #eee';
                     authDiv.style.display = 'flex';
                     authDiv.style.flexDirection = 'column';
                     authDiv.style.gap = '12px';
