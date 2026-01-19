@@ -17,6 +17,7 @@ export default defineConfig({
                 dashboardStudent: resolve(__dirname, 'dashboard-student.html'),
                 dashboardTutor: resolve(__dirname, 'dashboard-tutor.html'),
                 dashboardCounselor: resolve(__dirname, 'counselor-dashboard.html'),
+                profile: resolve(__dirname, 'profile.html'),
             },
         },
     },
