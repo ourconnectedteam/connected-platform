@@ -8,88 +8,165 @@
     <link rel="stylesheet" href="/src/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        .profile-header {
-            background: white;
-            padding: 30px 0 20px 0;
-            /* Reduced padding */
-            border-bottom: 1px solid var(--border-color);
-            text-align: center;
-            margin-top: 70px;
-            /* Clear the fixed navbar */
+        /* Modern Profile Layout */
+        body {
+            background-color: #FAFAFA;
         }
 
-        .profile-avatar-lg {
-            width: 100px;
-            /* Slightly smaller */
-            height: 100px;
+        .profile-layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 24px;
+            padding-top: 40px;
+            padding-bottom: 80px;
+            margin-top: 70px;
+            /* Navbar clearance */
+            max-width: 1100px !important;
+        }
+
+        @media (min-width: 900px) {
+            .profile-layout {
+                grid-template-columns: 340px 1fr;
+                gap: 32px;
+                padding-top: 60px;
+            }
+
+            .profile-sidebar {
+                position: sticky;
+                top: 100px;
+                /* Sticky sidebar */
+                height: fit-content;
+            }
+        }
+
+        /* Cards */
+        .profile-card {
+            background: white;
+            border-radius: 24px;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+            padding: 32px;
+            overflow: hidden;
+        }
+
+        /* Sidebar Specifics */
+        .profile-sidebar-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .profile-avatar-xl {
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
-            margin-bottom: 12px;
             border: 4px solid white;
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
         }
 
         .profile-name {
-            font-size: 1.75rem;
-            /* Slightly smaller */
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 4px;
-            line-height: 1.2;
-        }
-
-        .profile-role {
-            font-size: 1rem;
-            color: var(--text-secondary);
-            margin-bottom: 16px;
-        }
-
-        .profile-actions {
-            display: flex;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .profile-content {
-            padding: 24px 0;
-            /* Reduced padding */
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .content-section {
-            background: white;
-            padding: 24px;
-            /* Reduced padding */
-            border-radius: 20px;
-            margin-bottom: 16px;
-            /* Reduced margin */
-            border: 1px solid var(--border-color);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .section-header {
-            font-size: 1.1rem;
-            font-weight: 600;
-            margin-bottom: 12px;
             color: var(--text-primary);
+            line-height: 1.2;
+            margin-bottom: 6px;
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        .profile-role-badge {
+            display: inline-block;
+            padding: 6px 16px;
+            background: #F3F4F6;
+            color: var(--text-secondary);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 24px;
+            text-transform: capitalize;
+        }
+
+        .sidebar-divider {
+            width: 100%;
+            height: 1px;
+            background: #E5E7EB;
+            margin: 24px 0;
+        }
+
+        /* Info List in Sidebar */
+        .info-list {
+            width: 100%;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
             gap: 16px;
         }
 
+        .info-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
         .info-item label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            margin-bottom: 2px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #9CA3AF;
+            font-weight: 600;
         }
 
         .info-item span {
             font-size: 0.95rem;
+            color: var(--text-primary);
             font-weight: 500;
+        }
+
+        .profile-actions {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .profile-actions .btn {
+            width: 100%;
+        }
+
+        /* Main Content */
+        .bio-section h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .bio-text {
+            line-height: 1.7;
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        /* Loading State */
+        .skeleton-loader {
+            animation: pulse 1.5s infinite;
+            background: #f0f0f0;
+            border-radius: 4px;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.6;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                opacity: 0.6;
+            }
         }
     </style>
 </head>
@@ -110,97 +187,72 @@
         </div>
     </nav>
 
-    <div id="profile-container" style="display: none;">
-        <div class="profile-header">
-            <div class="container">
-                <img id="p-avatar" src="" alt="Avatar" class="profile-avatar-lg">
+    <div id="loading" style="display: flex; justify-content: center; padding-top: 150px;">
+        <div style="text-align: center;">
+            <div class="skeleton-loader" style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px;">
+            </div>
+            <div class="skeleton-loader" style="width: 200px; height: 24px; margin: 0 auto;"></div>
+        </div>
+    </div>
+
+    <div id="profile-container" class="container profile-layout" style="display: none;">
+        <!-- Left Sidebar -->
+        <aside class="profile-sidebar">
+            <div class="profile-card profile-sidebar-content">
+                <img id="p-avatar" src="" alt="Avatar" class="profile-avatar-xl">
                 <h1 id="p-name" class="profile-name"></h1>
-                <p id="p-role" class="profile-role"></p>
+                <span id="p-role" class="profile-role-badge"></span>
 
                 <div class="profile-actions" id="p-actions">
-                    <!-- Dynamic buttons -->
+                    <!-- Dynamic Buttons -->
                 </div>
-            </div>
-        </div>
 
-        <main class="container profile-content">
-            <div class="content-section">
-                <h3 class="section-header">About</h3>
-                <p id="p-bio" style="line-height: 1.6; color: var(--text-secondary);">No bio provided.</p>
-            </div>
+                <div class="sidebar-divider"></div>
 
-            <div class="content-section">
-                <h3 class="section-header">Details</h3>
-                <div class="info-grid" id="p-details">
+                <div class="info-list" id="p-details">
                     <!-- Dynamic Details -->
                 </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="profile-main">
+            <div class="profile-card bio-section">
+                <h3>About</h3>
+                <p id="p-bio" class="bio-text"></p>
             </div>
         </main>
     </div>
 
-    <div id="loading" style="text-align: center; padding: 100px;">Loading profile...</div>
-
     <script type="module" src="/src/main.js"></script>
     <script type="module">
         import { supabase } from '/src/lib/supabase.js';
-        // We'll import messaging dynamically or use window.messaging if attached, 
-        // but for now let's keep it simple to ensure loading works.
         import { messaging } from '/src/lib/messaging.js';
 
         // Debug logger
         function logDebug(msg, err = null) {
-            console.log(msg, err);
-            const debugEl = document.getElementById('debug-log') || createDebugEl();
-            debugEl.textContent += msg + (err ? ' ' + JSON.stringify(err) : '') + '\n';
-        }
-
-        function createDebugEl() {
-            const el = document.createElement('pre');
-            el.id = 'debug-log';
-            el.style.cssText = 'background:#eee; padding:10px; font-size:10px; margin:20px; overflow:auto; max-height:200px; display:none;'; // Hidden by default, unhide if stuck
-            document.body.appendChild(el);
-            return el;
+            // console.log(msg, err);
         }
 
         async function loadProfile() {
             try {
-                // Show debug if loading takes too long
-                setTimeout(() => {
-                    const loading = document.getElementById('loading');
-                    if (loading && loading.style.display !== 'none') {
-                        document.getElementById('debug-log').style.display = 'block';
-                        loading.textContent = 'Loading is taking longer than expected. See debug log below.';
-                    }
-                }, 3000);
-
-                logDebug("Starting loadProfile...");
                 const params = new URLSearchParams(window.location.search);
                 const userId = params.get('id');
 
                 if (!userId) {
-                    document.getElementById('loading').textContent = 'Error: No user ID provided in URL.';
+                    alert('User ID missing');
                     return;
                 }
-
-                logDebug(`Fetching profile for: ${userId}`);
 
                 // Fetch generic profile
                 const { data: profile, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
 
-                if (error) {
-                    logDebug("Profile fetch error:", error);
-                    document.getElementById('loading').textContent = 'Error fetching profile: ' + error.message;
+                if (error || !profile) {
+                    document.getElementById('loading').innerHTML = '<p>Profile not found or error loading.</p>';
                     return;
                 }
 
-                if (!profile) {
-                    document.getElementById('loading').textContent = 'Profile not found.';
-                    return;
-                }
-
-                logDebug(`Profile found: ${profile.full_name} (${profile.role})`);
-
-                // Fetch role specific details based on role
+                // Fetch role specific details
                 let roleData = {};
                 if (profile.role === 'tutor') {
                     const { data } = await supabase.from('tutor_profiles').select('*').eq('user_id', userId).single();
@@ -215,32 +267,30 @@
 
                 renderProfile(profile, roleData);
             } catch (err) {
-                logDebug("Critical Error:", err);
-                document.getElementById('loading').textContent = 'Unexpected Error: ' + err.message;
+                console.error("Critical Error:", err);
             }
         }
 
         function renderProfile(user, details) {
-            logDebug("Rendering profile...");
-            const loading = document.getElementById('loading');
-            if (loading) loading.style.display = 'none';
-
-            document.getElementById('profile-container').style.display = 'block';
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('profile-container').style.display = 'grid'; // Enable Grid
 
             // Basic Info
             const avatar = user.avatar_url || `/assets/${user.role}.png`;
             document.getElementById('p-name').textContent = user.full_name;
-            document.getElementById('p-role').textContent = user.role.charAt(0).toUpperCase() + user.role.slice(1);
+            document.getElementById('p-role').textContent = user.role;
             document.getElementById('p-avatar').src = avatar;
-            document.getElementById('p-bio').textContent = user.bio || "This user hasn't written a bio yet.";
 
-            // Role Details
+            const bioText = user.bio || "This user hasn't written a bio yet.";
+            document.getElementById('p-bio').innerHTML = bioText.replace(/\n/g, '<br>');
+
+            // Sidebar Details
             const grid = document.getElementById('p-details');
             let html = '';
 
             if (user.role === 'tutor') {
                 html += `<div class="info-item"><label>Subjects</label><span>${details.subjects?.join(', ') || 'N/A'}</span></div>`;
-                html += `<div class="info-item"><label>Hourly Rate</label><span>$${details.hourly_rate || '?'}</span></div>`;
+                html += `<div class="info-item"><label>Hourly Rate</label><span>$${details.hourly_rate || '?'} / hr</span></div>`;
                 html += `<div class="info-item"><label>Experience</label><span>${details.years_experience || 0} Years</span></div>`;
             } else if (user.role === 'counselor') {
                 html += `<div class="info-item"><label>Specialization</label><span>${details.specialization?.join(', ') || 'N/A'}</span></div>`;
@@ -255,7 +305,6 @@
             const actionContainer = document.getElementById('p-actions');
             let btns = '';
 
-            // Encode safely
             const safeName = encodeURIComponent(user.full_name);
             const safeImg = encodeURIComponent(avatar);
 
@@ -263,16 +312,14 @@
                 btns += `<a href="/booking.html?providerId=${user.id}&name=${safeName}&role=${user.role}&price=${details.hourly_rate || 0}&img=${safeImg}" class="btn btn-primary">Book Session</a>`;
                 btns += `<button class="btn btn-secondary" onclick="startChat('${user.id}')">Message</button>`;
             } else {
-                btns += `<button class="btn btn-primary" onclick="sendConnectionRequest('${user.id}')">Connect</button>`;
+                btns += `<button class="btn btn-primary" onclick="window.sendConnectionRequest('${user.id}')">Connect</button>`;
                 btns += `<button class="btn btn-secondary" onclick="startChat('${user.id}')">Message</button>`;
             }
             actionContainer.innerHTML = btns;
         }
 
-        // Initialize
         loadProfile();
 
-        // Global functions for buttons
         window.startChat = async (id) => {
             const session = await supabase.auth.getSession();
             if (!session.data.session) return window.location.href = '/src/auth.html#login';
@@ -291,6 +338,7 @@
             alert('Request sent!');
         };
 
+        // Expose to window for inline onclicks if needed, though they are already global
     </script>
 </body>
 
