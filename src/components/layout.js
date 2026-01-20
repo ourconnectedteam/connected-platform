@@ -83,12 +83,21 @@ export async function initLayout() {
                 navLinks.style.overflowY = 'auto';
 
                 // Clone Auth Buttons if not already there
-                if (!navLinks.querySelector('.mobile-auth-container')) {
-                    authDiv.style.display = 'flex';
-                    authDiv.style.flexDirection = 'column';
-                    authDiv.style.gap = '12px';
-                    authDiv.innerHTML = authContent;
-                    navLinks.appendChild(authDiv);
+                const existingAuth = navLinks.querySelector('.mobile-auth-container');
+                if (!existingAuth) {
+                    const mobileAuth = document.createElement('div');
+                    mobileAuth.className = 'mobile-auth-container';
+                    mobileAuth.style.display = 'flex';
+                    mobileAuth.style.flexDirection = 'column';
+                    mobileAuth.style.gap = '12px';
+                    mobileAuth.style.marginTop = '24px';
+
+                    // Get current auth content
+                    const navAuth = document.querySelector('.nav-auth');
+                    if (navAuth) {
+                        mobileAuth.innerHTML = navAuth.innerHTML;
+                    }
+                    navLinks.appendChild(mobileAuth);
                 }
             }
         });

@@ -67,20 +67,6 @@
         </div>
     </form>
 
-    <div class="auth-divider">
-        <span>or</span>
-    </div>
-
-    <!-- Social Login -->
-    <div class="social-login-container">
-        <div class="social-login-grid">
-            <button type="button" class="btn-social" onclick="window.handleSocialLogin('google')">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
-                Continue with Google
-            </button>
-        </div>
-    </div>
-
     <!-- Signup Form -->
     <form id="signup-form" class="hidden">
         <div class="form-group">
@@ -108,6 +94,20 @@
         </div>
     </form>
 
+    <div class="auth-divider">
+        <span>or</span>
+    </div>
+
+    <!-- Social Login -->
+    <div class="social-login-container">
+        <div class="social-login-grid">
+            <button type="button" class="btn-social" onclick="window.handleSocialLogin('google')">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                Continue with Google
+            </button>
+        </div>
+    </div>
+
     <p id="auth-message" style="margin-top: 16px; text-align: center; color: red;" class="hidden"></p>
 </div>
 
@@ -124,29 +124,36 @@
     const signupForm = document.getElementById('signup-form');
     const msg = document.getElementById('auth-message');
 
-    // Social Login Handler
-    window.handleSocialLogin = async (provider) => {
-        const { error } = await auth.signInWithOAuth(provider);
-        if (error) {
-            alert('Social Login Error: ' + error.message);
-        }
-    };
-
-    // Toggle Tabs
-    tabLogin.addEventListener('click', () => {
-        tabLogin.classList.add('active');
-        tabSignup.classList.remove('active');
-        loginForm.classList.remove('hidden');
-        signupForm.classList.add('hidden');
+    // Function to switch tabs
+    function switchTab(tab) {
         msg.classList.add('hidden');
+        if (tab === 'signup') {
+            tabSignup.classList.add('active');
+            tabLogin.classList.remove('active');
+            signupForm.classList.remove('hidden');
+            loginForm.classList.add('hidden');
+        } else {
+            tabLogin.classList.add('active');
+            tabSignup.classList.remove('active');
+            loginForm.classList.remove('hidden');
+            signupForm.classList.add('hidden');
+        }
+    }
+
+    // Check URL Hash on Load
+    if (window.location.hash === '#signup') {
+        switchTab('signup');
+    }
+
+    // Toggle Tabs Handlers
+    tabLogin.addEventListener('click', () => {
+        switchTab('login');
+        history.pushState(null, null, '#login');
     });
 
     tabSignup.addEventListener('click', () => {
-        tabSignup.classList.add('active');
-        tabLogin.classList.remove('active');
-        signupForm.classList.remove('hidden');
-        loginForm.classList.add('hidden');
-        msg.classList.add('hidden');
+        switchTab('signup');
+        history.pushState(null, null, '#signup');
     });
 
     // Handle Login
