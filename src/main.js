@@ -48,9 +48,22 @@ import { initParallax } from './components/parallax.js';
             if (path === '/' || path.includes('index.html')) {
                 const subheadline = document.querySelector('.subheadline');
                 const ctaGroup = document.querySelector('.cta-group');
+                const h1 = document.querySelector('.hero h1');
+
+                // Robustness: Ensure H1 is visible (prevents layout shifts if hidden by other logic)
+                if (h1) {
+                    h1.style.display = '';
+                    h1.style.opacity = '1';
+                    h1.style.visibility = 'visible';
+                }
 
                 // 1. Update Hero Greeting
-                if (subheadline) subheadline.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}! Ready to continue your journey?`;
+                if (subheadline) {
+                    subheadline.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}! Ready to continue your journey?`;
+                    subheadline.style.display = ''; // Ensure visible
+                    subheadline.style.opacity = '1';
+                }
+
                 if (ctaGroup) {
                     ctaGroup.innerHTML = `
                         <a href="tutors.html" class="btn btn-primary">Find a Tutor</a>
