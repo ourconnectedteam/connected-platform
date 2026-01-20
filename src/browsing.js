@@ -167,6 +167,10 @@ function createCard(type, details, user) {
                     <span>${details.rating_avg || '5.0'}</span>
                     <span class="rating-count">(${details.rating_count || 0} reviews)</span>
                 </div>
+                <div class="connections-badge" id="conn-${user.id}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <span>... Connections</span>
+                </div>
             </div>
             
             <div class="tags-row">
@@ -179,7 +183,32 @@ function createCard(type, details, user) {
         </div>
     `;
 
+    // Fetch Connection Count Async
+    fetchConnectionCount(user.id).then(count => {
+        const el = card.querySelector(`#conn-${user.id} span`);
+        if (el) el.textContent = `${count > 500 ? '500+' : count} Connections`;
+    });
+
     return card;
+}
+
+// Helper to fetch connection count
+async function fetchConnectionCount(userId) {
+    try {
+        const { count, error } = await supabase
+            .from('connection_requests')
+            .select('*', { count: 'exact', head: true })
+            .eq('status', 'accepted')
+            .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+
+        if (error) {
+            console.error('Error fetching connections for', userId, error);
+            return 0;
+        }
+        return count || 0;
+    } catch (e) {
+        return 0;
+    }
 }
 
 // Toast Notification Helper

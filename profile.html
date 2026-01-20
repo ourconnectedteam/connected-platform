@@ -202,6 +202,16 @@
                 <img id="p-avatar" src="" alt="Avatar" class="profile-avatar-xl">
                 <h1 id="p-name" class="profile-name"></h1>
                 <span id="p-role" class="profile-role-badge"></span>
+                <div id="p-connections" class="connections-badge" style="justify-content: center; margin-bottom: 20px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>... Connections</span>
+                </div>
 
                 <div class="profile-actions" id="p-actions">
                     <!-- Dynamic Buttons -->
@@ -265,13 +275,20 @@
                     roleData = data || {};
                 }
 
-                renderProfile(profile, roleData);
+                // Fetch connection count
+                const { count: connCount } = await supabase
+                    .from('connection_requests')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('status', 'accepted')
+                    .or(`requester_id.eq.${userId},receiver_id.eq.${userId}`);
+
+                renderProfile(profile, roleData, connCount || 0);
             } catch (err) {
                 console.error("Critical Error:", err);
             }
         }
 
-        function renderProfile(user, details) {
+        function renderProfile(user, details, connCount) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-container').style.display = 'grid'; // Enable Grid
 
@@ -280,6 +297,10 @@
             document.getElementById('p-name').textContent = user.full_name;
             document.getElementById('p-role').textContent = user.role;
             document.getElementById('p-avatar').src = avatar;
+
+            // Update Connection Count
+            const connText = connCount > 500 ? '500+ Connections' : `${connCount} Connections`;
+            document.querySelector('#p-connections span').textContent = connText;
 
             const bioText = user.bio || "This user hasn't written a bio yet.";
             document.getElementById('p-bio').innerHTML = bioText.replace(/\n/g, '<br>');
