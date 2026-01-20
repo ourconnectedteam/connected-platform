@@ -137,84 +137,8 @@ import { initParallax } from './components/parallax.js';
 })();
 
 // View Transition & Link Interception
-document.addEventListener('DOMContentLoaded', () => {
-    // Intercept internal links
-    document.body.addEventListener('click', e => {
-        const link = e.target.closest('a');
-        if (!link) return;
-
-        const href = link.getAttribute('href');
-        // Ignore external, hash, or new tab links
-        if (!href || href.startsWith('#') || href.startsWith('http') || link.target === '_blank') return;
-
-        // Prevent default navigation
-        e.preventDefault();
-
-        // Use View Transition API if supported
-        if (document.startViewTransition) {
-            document.startViewTransition(async () => {
-                await navigateTo(href);
-            });
-        } else {
-            // Fallback
-            window.location.href = href;
-        }
-    });
-
-    async function navigateTo(url) {
-        // Fetch the new page
-        try {
-            const response = await fetch(url);
-            const text = await response.text();
-
-            // Parse the new HTML
-            const parser = new DOMParser();
-            const newDoc = parser.parseFromString(text, 'text/html');
-
-            // Swap the body content (keeping the layout if possible vs re-injecting)
-            // Strategy: We replace the entire body content BUT since we have an injected nav/footer, 
-            // we might want to be smart. For now, simplest is swap body content and re-run initLayout.
-            // Actually, best is to just swap global content.
-
-            const newBody = newDoc.body;
-            document.body.innerHTML = newBody.innerHTML;
-
-            // Re-run scripts? 
-            // This is the tricky part of SPA simulation. Scripts in the new body won't auto-run.
-            // We need to re-trigger our main logic.
-
-            // Update URL
-            history.pushState(null, '', url);
-
-            // Re-initialize dynamic components
-            // Note: In a real framework, this is handled. Here, we might just reload if it's too complex.
-            // But for "Wow", let's try to just reload the main chunks.
-
-            // Ideally we shouldn't replace the ENTIRE body if we want smooth nav transitions, 
-            // but for page-to-page, we do.
-
-            // Rerun Init
-            import('./main.js').then(m => {
-                // Trigger re-init if exposed, or rely on side-effects if we re-import? 
-                // ES modules cache. We might need a global 'init' function exposed on window.
-                // This simpler approach:
-                window.location.href = url; // Fallback to real nav for reliability if SPA logic is too risky without a router.
-                // ViewTransition works best with SPA or the new Multi-page View Transition API (Chrome 126+).
-                // Since we can't guarantee the browser version, let's Stick to the simple "Delay" for smooth feel that was already there?
-                // User asked for "Modern". The updated implementation plan promised View Transitions.
-
-                // Let's use the actual MPA View Transition standard which doesn't need JS interception if enabled!
-                // <meta name="view-transition" content="same-origin" />
-                // So I will revert this JS interception block and just add the meta tag to all pages.
-                // It's much safer and more robust.
-                return;
-            });
-
-        } catch (err) {
-            window.location.href = url;
-        }
-    }
-});
+// View Transition & Link Interception block removed to fix auth page issues.
+// Standard navigation is now used, with the delay-based transition effect below.
 
 document.addEventListener('DOMContentLoaded', () => {
     // Smooth scrolling for navigation links
