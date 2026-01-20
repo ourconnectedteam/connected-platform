@@ -370,6 +370,22 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <textarea id="prof-bio" class="form-textarea" rows="3" placeholder="Tell us about yourself...">${profile.bio || ''}</textarea>
                     </div>
 
+                    <div class="profile-section-title" style="margin-top: 24px;">Social Links</div>
+                    <div class="form-grid-3">
+                        <div class="form-group">
+                            <label>Instagram URL</label>
+                            <input type="text" id="prof-instagram" class="form-input" value="${profile.instagram || ''}" placeholder="instagram.com/user">
+                        </div>
+                        <div class="form-group">
+                            <label>Facebook URL</label>
+                            <input type="text" id="prof-facebook" class="form-input" value="${profile.facebook || ''}" placeholder="facebook.com/user">
+                        </div>
+                        <div class="form-group">
+                            <label>LinkedIn URL</label>
+                            <input type="text" id="prof-linkedin" class="form-input" value="${profile.linkedin || ''}" placeholder="linkedin.com/in/user">
+                        </div>
+                    </div>
+
                     ${extraFieldsHTML}
 
                     <div class="form-actions-right">
@@ -396,6 +412,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 bio: document.getElementById('prof-bio').value,
                 location: document.getElementById('prof-location').value,
                 avatar_url: document.getElementById('prof-avatar').value,
+                instagram: document.getElementById('prof-instagram').value || null,
+                facebook: document.getElementById('prof-facebook').value || null,
+                linkedin: document.getElementById('prof-linkedin').value || null,
                 updated_at: new Date().toISOString()
             };
 
