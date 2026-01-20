@@ -78,6 +78,17 @@
                     placeholder="Tell us a bit about yourself..."></textarea>
             </div>
 
+            <!-- Social Links (Optional) -->
+            <div class="form-group">
+                <label>Social Links (Optional)</label>
+                <div style="display: grid; gap: 12px;">
+                    <input type="text" id="social-instagram" class="form-input"
+                        placeholder="Instagram URL (e.g. instagram.com/username)">
+                    <input type="text" id="social-facebook" class="form-input" placeholder="Facebook URL">
+                    <input type="text" id="social-linkedin" class="form-input" placeholder="LinkedIn URL">
+                </div>
+            </div>
+
             <!-- Role Specific Fields (Dynamic) -->
             <div id="role-fields">
                 <!-- Student Fields -->
@@ -177,6 +188,10 @@
                         else c.classList.remove('selected');
                     });
                 }
+                // Pre-fill Socials
+                document.getElementById('social-instagram').value = data.instagram || '';
+                document.getElementById('social-facebook').value = data.facebook || '';
+                document.getElementById('social-linkedin').value = data.linkedin || '';
             }
         }
         init();
@@ -200,6 +215,11 @@
             const fullName = document.getElementById('full-name').value;
             const role = roleInput.value;
             const bio = document.getElementById('bio').value;
+
+            const instagram = document.getElementById('social-instagram').value;
+            const facebook = document.getElementById('social-facebook').value;
+            const linkedin = document.getElementById('social-linkedin').value;
+
             const errorMsg = document.getElementById('error-message');
 
             if (!role) {
@@ -211,24 +231,26 @@
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return window.location.href = '/src/auth.html#login';
 
+            const profileData = {
+                full_name: fullName,
+                role: role,
+                bio: bio,
+                instagram: instagram || null,
+                facebook: facebook || null,
+                linkedin: linkedin || null,
+                onboarding_complete: true
+            };
+
             let error;
             if (existingProfile) {
                 // Update
-                const { error: upError } = await supabase.from('profiles').update({
-                    full_name: fullName,
-                    role: role,
-                    bio: bio,
-                    onboarding_complete: true
-                }).eq('id', user.id);
+                const { error: upError } = await supabase.from('profiles').update(profileData).eq('id', user.id);
                 error = upError;
             } else {
                 // Insert
                 const { error: inError } = await supabase.from('profiles').insert({
                     id: user.id,
-                    full_name: fullName,
-                    role: role,
-                    bio: bio,
-                    onboarding_complete: true
+                    ...profileData
                 });
                 error = inError;
             }
