@@ -119,7 +119,7 @@ function createCard(type, details, user) {
     if (type === 'tutor') {
         details.subjects?.forEach(sub => tagsHtml += `<span class="tag">${sub}</span>`);
         subtext = 'Tutor';
-        priceInfo = `<div class="price">$${details.hourly_rate}<span>/hr</span></div>`;
+        priceInfo = `<div class="price">$${details.hourly_rate || '?'}<span>/hr</span></div>`;
         actionBtn = `
             <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Tutor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm btn-wide">Book</a>
             <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>

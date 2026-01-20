@@ -503,7 +503,8 @@ body::before {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    /* Reduced from 0.85rem */
     color: var(--text-secondary);
     margin-top: 4px;
 }
@@ -511,6 +512,24 @@ body::before {
 .connections-badge svg {
     color: var(--text-secondary);
     opacity: 0.7;
+    width: 12px;
+    /* Enforce smaller icon */
+    height: 12px;
+}
+
+.rating {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    /* Consistent spacing */
+}
+
+.rating svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Social Links */
