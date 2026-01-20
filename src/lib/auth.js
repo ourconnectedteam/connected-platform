@@ -48,6 +48,17 @@ export const auth = {
         return { data, error };
     },
 
+    // Sign In with OAuth
+    async signInWithOAuth(provider) {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: provider,
+            options: {
+                redirectTo: window.location.origin + '/onboarding.html'
+            }
+        });
+        return { data, error };
+    },
+
     // Sign Out
     async signOut() {
         const { error } = await supabase.auth.signOut();
