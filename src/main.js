@@ -429,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const { data, error } = await bookingLib.getSlots(providerId);
                 if (error) throw error;
                 slots = data || [];
+                window.allSlots = slots; // Store for validaton
             } catch (err) {
                 console.error('Error fetching slots:', err);
                 calendarContainer.innerHTML = '<p class="text-center text-danger">Unable to load time slots. Please try again later.</p>';
@@ -467,7 +468,8 @@ document.addEventListener('DOMContentLoaded', () => {
             daySlots.forEach(slot => {
                 const start = new Date(slot.start_time);
                 const timeStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                buttonsHtml += `<button type="button" class="btn-slot" onclick="selectSlot(this, '${dayName}, ${monthName} ${dayNum}', '${timeStr}', '${slot.id}', '${slot.start_time}')">${timeStr}</button>`;
+                // We pass the raw slot ID and the ISO time
+                buttonsHtml += `<button type="button" class="btn-slot" data-id="${slot.id}" data-time="${slot.start_time}" onclick="selectSlot(this, '${dayName}, ${monthName} ${dayNum}', '${timeStr}', '${slot.id}', '${slot.start_time}')">${timeStr}</button>`;
             });
 
             html += `
@@ -491,6 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .btn-slot { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 8px; background: white; color: var(--text-primary); font-size: 0.9rem; cursor: pointer; transition: all 0.2s; }
             .btn-slot:hover { border-color: var(--primary); background: var(--bg-secondary); }
             .btn-slot.selected { background: var(--primary); color: white; border-color: var(--primary); }
+            .btn-slot.disabled { opacity: 0.5; cursor: not-allowed; background: #f5f5f5; border-color: #eee; }
         `;
         document.head.appendChild(style);
 
@@ -500,12 +503,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Slot Selection Handler
     window.selectSlot = function (btn, dateStr, timeStr, slotId, isoDate) {
+        // 1. Clear previous
         document.querySelectorAll('.btn-slot').forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
 
-        window.selectedTime = `${dateStr} @ ${timeStr}`;
-        window.selectedSlotId = slotId;
+        // 2. Get Duration
+        const durationSelect = document.querySelector('select[name="duration"]');
+        const duration = parseInt(durationSelect ? durationSelect.value : 60); // min
+
+        // 3. Find Required Slots
+        // Assuming slots are 60 mins by default in DB structure, or we calculate strictly by time.
+        // Let's assume slots are 1 hour chunks for now based on current DB usage.
+        // If duration is 90 mins, we need 2 one-hour slots (covering the full range).
+        // Or if slots are accurate, we need to find consecutive slots.
+
+        const requiredSlots = Math.ceil(duration / 60);
+        const allSlots = window.allSlots || [];
+        const startIndex = allSlots.findIndex(s => s.id === slotId);
+
+        if (startIndex === -1) return;
+
+        // Check if we have enough consecutive slots
+        const slotsToBook = [];
+        let valid = true;
+
+        for (let i = 0; i < requiredSlots; i++) {
+            const current = allSlots[startIndex + i];
+
+            if (!current) {
+                valid = false;
+                break;
+            }
+
+            // Check continuity (next slot must start when this one ends)
+            // Or simpler: index must be sequential logic (if sorted). 
+            // Better: Check time diff.
+            if (i > 0) {
+                const prev = allSlots[startIndex + i - 1];
+                const prevEnd = new Date(prev.start_time).getTime() + (60 * 60 * 1000); // Assume 1 hr slot
+                const currStart = new Date(current.start_time).getTime();
+
+                // Allow small gap? or strict? Strict for now.
+                if (currStart !== prevEnd) {
+                    valid = false;
+                    break;
+                }
+            }
+
+            slotsToBook.push(current);
+        }
+
+        if (!valid) {
+            alert(`Unable to book ${duration} minutes starting at ${timeStr}. Not enough consecutive slots available.`);
+            return;
+        }
+
+        // 4. Highlight Logic
+        slotsToBook.forEach(s => {
+            const el = document.querySelector(`.btn-slot[data-id="${s.id}"]`);
+            if (el) el.classList.add('selected');
+        });
+
+        // 5. Set Global State
+        window.selectedTime = `${dateStr} @ ${timeStr} (${duration} min)`;
+        window.selectedSlotId = slotId; // Start Slot
+        window.selectedSlotIds = slotsToBook.map(s => s.id); // All Slots
         window.selectedIsoDate = isoDate;
+        window.selectedDuration = duration;
     };
 
     // 4. Confirm Step Population
@@ -571,9 +634,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         student_id: user?.id,
                         provider_id: providerId,
                         scheduled_start: window.selectedIsoDate || new Date().toISOString(),
-                        scheduled_end: new Date((new Date(window.selectedIsoDate).getTime() + 3600000)).toISOString(),
-                        price: 60.00,
-                        notes: formData.get('notes')
+                        scheduled_end: calculateEndTime(window.selectedIsoDate, window.selectedDuration || 60),
+                        price: 60.00, // Should calculate dynamically based on duration in real app
+                        notes: formData.get('notes'),
+                        slot_ids: window.selectedSlotIds // Pass all selected slots
                     };
 
                     const { error: bookingError } = await bookingLib.createBooking(bookingDetails);

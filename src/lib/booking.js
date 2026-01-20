@@ -21,10 +21,15 @@ export const booking = {
         // 1. Mark Slot as Booked (Optimistic)
         // In real app, use a transaction or RPC to prevent double booking
         // Here we just update
-        if (details.slot_id) {
+        // 1. Mark Slot(s) as Booked (Optimistic)
+        // In real app, use a transaction or RPC to prevent double booking
+        // Here we just update
+        const slotIds = details.slot_ids || (details.slot_id ? [details.slot_id] : []);
+
+        if (slotIds.length > 0) {
             await supabase.from('availability_slots')
                 .update({ is_booked: true })
-                .eq('id', details.slot_id);
+                .in('id', slotIds);
         }
 
         // 2. Create Booking Record
