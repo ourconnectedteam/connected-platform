@@ -182,6 +182,56 @@ function createCard(type, details, user) {
     return card;
 }
 
+// Toast Notification Helper
+function showToast(title, message, type = 'success') {
+    // 1. Create Container if not exists
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+
+    // 2. Create Toast Element
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    // Icon based on type
+    let icon = '✓';
+    if (type === 'error') icon = '✕';
+    if (type === 'info') icon = 'ℹ';
+
+    toast.innerHTML = `
+        <div class="toast-icon">${icon}</div>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+    `;
+
+    // 3. Add to DOM
+    container.appendChild(toast);
+
+    // 4. Animate In
+    // Double requestAnimationFrame to ensure transition works after append
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+    });
+
+    // 5. Auto Dismiss
+    setTimeout(() => {
+        toast.classList.add('toast-hiding');
+        toast.addEventListener('transitionend', () => {
+            toast.remove();
+            if (container.children.length === 0) {
+                container.remove();
+            }
+        });
+    }, 3000);
+}
+
 // Expose connect function globally for now
 // START CONVERSATION / CONNECTION REQUEST
 import { messaging } from './lib/messaging.js';
@@ -190,7 +240,7 @@ window.sendConnectionRequest = async (receiverId) => {
     // Check auth
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-        alert('Please log in to connect.');
+        showToast('Authentication Required', 'Please log in to connect.', 'error');
         return;
     }
 
@@ -207,10 +257,13 @@ window.sendConnectionRequest = async (receiverId) => {
     });
 
     if (error) {
-        if (error.code === '23505') alert('Request already sent!');
-        else alert('Error sending request: ' + error.message);
+        if (error.code === '23505') {
+            showToast('Request Pending', 'You already sent a connection request.', 'info');
+        } else {
+            showToast('Error', error.message, 'error');
+        }
     } else {
-        alert('Request sent!');
+        showToast('Invite Sent', 'They will get a notification shortly.', 'success');
     }
 };
 
@@ -224,7 +277,7 @@ window.startChat = async (receiverId) => {
     const { data, error } = await messaging.startConversation(user.id, receiverId);
     if (error) {
         console.error(error);
-        alert('Could not start chat.');
+        showToast('Error', 'Could not start chat conversation.', 'error');
     } else {
         // Redirect to dashboard messages tab
         // Determine dashboard type based on MY role
