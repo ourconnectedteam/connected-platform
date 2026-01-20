@@ -758,66 +758,98 @@ body::before {
 
 /* Trust Section */
 .trust-section {
-    padding: 48px 0;
-    /* Clean background, no border for cleaner look */
-    background: transparent;
-    margin-top: -24px;
-    /* Pull it up slightly closer to hero if needed, or keep 0 */
+    padding: 80px 0;
+    /* Increase padding for better separation */
+    margin-top: 0;
+    border-top: 1px solid var(--border-color);
+    /* Clear divider line */
+    background: #fff;
+    position: relative;
 }
 
 .trust-section .container {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 16px;
-    opacity: 1;
-    /* Reset opacity */
+    gap: 24px;
 }
 
 .trust-badge {
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 100px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: all 0.3s ease;
     cursor: default;
+    border: 1px solid transparent;
+    /* Prepare for border transition */
+}
+
+/* Specific Badge Colors */
+.badge-blue {
+    background: #F0F9FF;
+    border-color: #E0F2FE;
+    color: #0c4a6e;
+}
+
+.badge-green {
+    background: #F0FDF4;
+    border-color: #DCFCE7;
+    color: #14532d;
+}
+
+.badge-purple {
+    background: #F5F3FF;
+    border-color: #EDE9FE;
+    color: #4c1d95;
 }
 
 .trust-badge:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
-    background: #fff;
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+}
+
+.badge-blue:hover {
+    border-color: #007AFF;
+}
+
+.badge-green:hover {
+    border-color: #34C759;
+}
+
+.badge-purple:hover {
+    border-color: #5856D6;
 }
 
 .trust-badge svg {
-    /* Icons defined in HTML with classes, but fallback colors here */
-    color: var(--text-secondary);
+    /* SVG colors are set via utility classes in HTML */
 }
 
 .text-blue-500 {
     color: #007AFF;
+    stroke: #007AFF;
 }
 
 .text-green-500 {
     color: #34C759;
+    stroke: #34C759;
 }
 
 .text-purple-500 {
     color: #5856D6;
+    stroke: #5856D6;
 }
 
 /* CTA Section */
 .cta-section {
     padding: 100px 0;
+    background: #fff;
+    /* Ensure separation */
 }
 
 .cta-box {
