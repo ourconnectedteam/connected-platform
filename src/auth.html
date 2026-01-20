@@ -52,24 +52,6 @@
         <div class="auth-tab" id="tab-signup">Sign Up</div>
     </div>
 
-    <!-- Social Login -->
-    <div class="social-login-container">
-        <div class="social-login-grid">
-            <button type="button" class="btn-social" onclick="window.handleSocialLogin('google')">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
-                Continue with Google
-            </button>
-            <button type="button" class="btn-social" onclick="window.handleSocialLogin('apple')">
-                <img src="https://www.svgrepo.com/show/448234/apple.svg" alt="Apple">
-                Continue with Apple
-            </button>
-        </div>
-
-        <div class="auth-divider">
-            <span>or continue with email</span>
-        </div>
-    </div>
-
     <!-- Login Form -->
     <form id="login-form">
         <div class="form-group">
@@ -84,6 +66,20 @@
             <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
         </div>
     </form>
+
+    <div class="auth-divider">
+        <span>or</span>
+    </div>
+
+    <!-- Social Login -->
+    <div class="social-login-container">
+        <div class="social-login-grid">
+            <button type="button" class="btn-social" onclick="window.handleSocialLogin('google')">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
+                Continue with Google
+            </button>
+        </div>
+    </div>
 
     <!-- Signup Form -->
     <form id="signup-form" class="hidden">
