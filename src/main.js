@@ -372,11 +372,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div>
                                 <span style="color: #666;">Time</span>
-                                <div style="font-weight: 500;">Coming Soon (Step 2)</div> 
+                                <div style="font-weight: 500;">${window.selectedTime || 'Not selected'}</div> 
                             </div>
                              <div>
                                 <span style="color: #666;">Price</span>
-                                <div style="font-weight: 600; color: #007AFF;">$60.00</div>
+                                <div style="font-weight: 600; color: #007AFF;">$${window.selectedPrice || '0.00'}</div>
                             </div>
                         </div>
                     </div>
@@ -511,12 +511,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const duration = parseInt(durationSelect ? durationSelect.value : 60); // min
 
         // 3. Find Required Slots
-        // Assuming slots are 60 mins by default in DB structure, or we calculate strictly by time.
-        // Let's assume slots are 1 hour chunks for now based on current DB usage.
-        // If duration is 90 mins, we need 2 one-hour slots (covering the full range).
-        // Or if slots are accurate, we need to find consecutive slots.
-
-        const requiredSlots = Math.ceil(duration / 60);
+        // Slots are now 30 minutes. 
+        // 30 mins -> 1 slot
+        // 60 mins -> 2 slots
+        // 90 mins -> 3 slots
+        const requiredSlots = Math.ceil(duration / 30);
         const allSlots = window.allSlots || [];
         const startIndex = allSlots.findIndex(s => s.id === slotId);
 
@@ -534,16 +533,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
 
-            // Check continuity (next slot must start when this one ends)
-            // Or simpler: index must be sequential logic (if sorted). 
-            // Better: Check time diff.
+            // Check continuity
+            // For i > 0, current start must equal previous end
             if (i > 0) {
                 const prev = allSlots[startIndex + i - 1];
-                const prevEnd = new Date(prev.start_time).getTime() + (60 * 60 * 1000); // Assume 1 hr slot
+                const prevEnd = new Date(prev.end_time).getTime();
                 const currStart = new Date(current.start_time).getTime();
 
-                // Allow small gap? or strict? Strict for now.
-                if (currStart !== prevEnd) {
+                // Allow tiny tolerance of 1s just in case of weird DB storage, though unlikely
+                if (Math.abs(currStart - prevEnd) > 1000) {
                     valid = false;
                     break;
                 }
@@ -563,12 +561,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (el) el.classList.add('selected');
         });
 
-        // 5. Set Global State
+        // 5. Calculate Price
+        const priceStr = new URLSearchParams(window.location.search).get('price'); // "60" or "40"
+        const hourlyRate = priceStr ? parseFloat(priceStr) : 60;
+        // Price = HourlyRate * (Duration / 60)
+        const finalPrice = (hourlyRate * (duration / 60)).toFixed(2);
+
+        // 6. Set Global State
         window.selectedTime = `${dateStr} @ ${timeStr} (${duration} min)`;
-        window.selectedSlotId = slotId; // Start Slot
-        window.selectedSlotIds = slotsToBook.map(s => s.id); // All Slots
+        window.selectedSlotId = slotId;
+        window.selectedSlotIds = slotsToBook.map(s => s.id);
         window.selectedIsoDate = isoDate;
         window.selectedDuration = duration;
+        window.selectedPrice = finalPrice;
     };
 
     // 4. Confirm Step Population
@@ -635,7 +640,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         provider_id: providerId,
                         scheduled_start: window.selectedIsoDate || new Date().toISOString(),
                         scheduled_end: calculateEndTime(window.selectedIsoDate, window.selectedDuration || 60),
-                        price: 60.00, // Should calculate dynamically based on duration in real app
+                        price: window.selectedPrice ? parseFloat(window.selectedPrice) : 60.00,
                         notes: formData.get('notes'),
                         slot_ids: window.selectedSlotIds // Pass all selected slots
                     };

@@ -14,6 +14,77 @@ export const booking = {
         return { data, error };
     },
 
+    // Set Availability (Batch Create Slots)
+    async setAvailability(providerId, schedule) {
+        // schedule: { 'Mon': ['09:00-12:00', '14:00-17:00'], 'Tue': ... }
+        // Generate slots for next 4 weeks
+
+        const slots = [];
+        const today = new Date();
+        const endDate = new Date();
+        endDate.setDate(today.getDate() + 28); // 4 weeks
+
+        // Helper to parse time string "09:00" -> {h, m}
+        const parseTime = (str) => {
+            const [h, m] = str.split(':').map(Number);
+            return { h, m };
+        };
+
+        // Iterate dates
+        for (let d = new Date(today); d <= endDate; d.setDate(d.getDate() + 1)) {
+            const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // "Mon", "Tue"
+
+            if (schedule[dayName]) {
+                schedule[dayName].forEach(range => {
+                    const [startStr, endStr] = range.split('-');
+                    const start = parseTime(startStr);
+                    const end = parseTime(endStr);
+
+                    // Create Date objects for this range
+                    const startTime = new Date(d);
+                    startTime.setHours(start.h, start.m, 0, 0);
+
+                    const endTime = new Date(d);
+                    endTime.setHours(end.h, end.m, 0, 0);
+
+                    // Generate 30 min slots
+                    let temp = new Date(startTime);
+                    while (temp < endTime) {
+                        const slotStart = new Date(temp);
+                        const slotEnd = new Date(temp.getTime() + 30 * 60000); // +30 mins
+
+                        // Don't add if past current time
+                        if (slotStart > new Date()) {
+                            slots.push({
+                                provider_id: providerId,
+                                start_time: slotStart.toISOString(),
+                                end_time: slotEnd.toISOString(),
+                                is_booked: false
+                            });
+                        }
+                        temp = slotEnd;
+                    }
+                });
+            }
+        }
+
+        // Batch Insert
+        if (slots.length > 0) {
+            // First, clear existing future unbooked slots to avoid duplicates?
+            // Real app: careful sync. Demo: Clear all unbooked future slots for this provider
+            await supabase.from('availability_slots')
+                .delete()
+                .eq('provider_id', providerId)
+                .eq('is_booked', false)
+                .gte('start_time', new Date().toISOString());
+
+            const { data, error } = await supabase.from('availability_slots').insert(slots);
+            return { count: slots.length, error };
+        }
+
+        return { count: 0 };
+    },
+
     // Create Booking
     async createBooking(details) {
         // details: { student_id, provider_id, slot_id, notes, ... }

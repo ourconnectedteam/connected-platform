@@ -487,6 +487,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
 
+
+    // Availability Form Handler
+    const availabilityForm = document.getElementById('availability-form');
+    if (availabilityForm) {
+        availabilityForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('save-availability');
+            btn.textContent = 'Generating Slots...';
+            btn.disabled = true;
+
+            const schedule = {};
+            const formData = new FormData(availabilityForm);
+            const days = formData.getAll('day'); // ['Mon', 'Wed']
+
+            days.forEach(day => {
+                const start = formData.get(`start-${day}`); // "09:00"
+                const end = formData.get(`end-${day}`);     // "17:00"
+                if (start && end) {
+                    schedule[day] = [`${start}-${end}`];
+                }
+            });
+
+            const { data: { user } } = await supabase.auth.getUser();
+            const { count, error } = await booking.setAvailability(user.id, schedule);
+
+            btn.textContent = 'Save & Generate Slots';
+            btn.disabled = false;
+
+            if (error) {
+                console.error(error);
+                alert('Failed to update availability.');
+            } else {
+                alert(`Success! Generated ${count} slots for the next 4 weeks.`);
+            }
+        });
+    }
+
     // URL Param Logic (Deep Linking)
     const urlParams = new URLSearchParams(window.location.search);
     const tabParam = urlParams.get('tab');
