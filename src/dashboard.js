@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetEl) {
                 targetEl.classList.add('active');
                 // Load data based on tab
-                if (tab.dataset.tab === 'bookings') loadBookings();
+                if (tab.dataset.tab === 'upcoming' || tab.dataset.tab === 'bookings') loadBookings();
                 if (tab.dataset.tab === 'messages') loadConversations();
                 if (tab.dataset.tab === 'connections') loadConnections();
                 if (tab.dataset.tab === 'requests') loadRequests();
@@ -40,32 +40,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!user) return;
 
         // Fetch bookings (simplified query)
+        // Fetch bookings & reviews
         const role = (document.title.includes('Tutor') || document.title.includes('Counselor')) ? 'provider_id' : 'student_id';
+        const isProvider = role === 'provider_id';
 
-        const { data: bookings } = await supabase
+        let query = supabase
             .from('bookings')
-            .select(`*, profiles:${role === 'student_id' ? 'provider_id' : 'student_id'}(full_name)`)
+            .select(`*, reviews(id, reviewer_id), profiles:${isProvider ? 'student_id' : 'provider_id'}(full_name)`)
             .eq(role, user.id)
             .order('scheduled_start', { ascending: true });
 
+        // If Provider (Tutor/Counselor), ONLY show confirmed bookings in 'Upcoming' tab
+        if (isProvider) {
+            query = query.in('status', ['confirmed', 'completed']);
+        }
+
+        const { data: bookings } = await query;
+
         if (!bookings || bookings.length === 0) {
-            list.innerHTML = '<p>No bookings found.</p>';
+            list.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    <p style="font-size: 1.1rem; margin-bottom: 12px;">No sessions found.</p>
+                </div>
+            `;
             return;
         }
 
-        const isStudent = role === 'student_id'; // If I am filtering by student_id, I am a provider? No.
-        // Wait, logic check:
-        // const role = (document.title.includes('Tutor') ... ) ? 'provider_id' : 'student_id';
-        // If I am a Student, role is 'student_id'. available col is 'provider_id'.
-
         list.innerHTML = bookings.map(b => {
-            const otherUser = b.profiles; // The profile of the OTHER person
-            // If I am student, I want to message provider (b.provider_id)
-            // If I am tutor, I want to message student (b.student_id)
-            const targetId = isStudent ? b.provider_id : b.student_id;
+            const otherUser = b.profiles;
+            const targetId = isProvider ? b.student_id : b.provider_id;
+            const isPast = new Date() > new Date(b.scheduled_end);
 
-            // Only show Cancel if status is not cancelled
-            const showCancel = b.status !== 'cancelled' && b.status !== 'completed';
+            // Check if WE have reviewed them
+            const hasReviewed = b.reviews && b.reviews.some(r => r.reviewer_id === user.id);
+
+            // Status Logic
+            let statusBadge = '';
+            let actionBtn = '';
+
+            if (b.status === 'pending_approval') {
+                statusBadge = '<div class="status-badge" style="background:#fff7ed; color:#c2410c; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Pending Approval</div>';
+            } else if (b.status === 'approved_pending_payment') {
+                statusBadge = '<div class="status-badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Awaiting Payment</div>';
+                if (!isProvider) {
+                    actionBtn = `<button class="btn btn-sm btn-primary" onclick="payNow('${b.id}')">Pay Now</button>`;
+                }
+            } else if (b.status === 'confirmed') {
+                statusBadge = '<div class="status-badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Confirmed</div>';
+
+                // Review Logic
+                if (isPast) {
+                    if (!hasReviewed) {
+                        actionBtn = `<button class="btn btn-sm btn-outline" onclick="openReviewModal('${b.id}', '${targetId}')">Rate User</button>`;
+                    } else {
+                        actionBtn = `<span style="font-size: 0.85rem; color: #059669; font-weight: 500;">Reviewed ✓</span>`;
+                    }
+                }
+
+            } else if (b.status === 'completed') {
+                statusBadge = '<div class="status-badge" style="background:#f3f4f6; color:#374151; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Completed</div>';
+            } else if (b.status === 'cancelled') {
+                statusBadge = '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Cancelled</div>';
+            } else if (b.status === 'rejected') {
+                statusBadge = '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Request Rejected</div>';
+            }
+
+            // Buttons
+            const showMessage = b.status !== 'cancelled' && b.status !== 'rejected';
+            const showCancel = b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'rejected' && !isPast;
+            const showTrash = b.status === 'cancelled' || b.status === 'rejected'; // User wants trash for cancelled
 
             return `
             <div class="booking-item">
@@ -74,17 +117,203 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <h4 style="font-weight: 600; margin-bottom: 4px;">
                             ${new Date(b.scheduled_start).toLocaleDateString()} @ ${new Date(b.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </h4>
-                        <div class="status-badge status-${b.status}" id="status-${b.id}">${b.status.replace('_', ' ')}</div>
+                        ${statusBadge}
                     </div>
-                    <p style="color: grey; font-size: 0.9rem; margin-bottom: 8px;">With ${otherUser ? otherUser.full_name : 'User'}</p>
+                    <p style="color: grey; font-size: 0.9rem; margin-bottom: 8px;">With ${otherUser ? otherUser.full_name : 'User'} · $${b.price_total || b.price}</p>
                     
-                    <div class="action-btn-group">
-                        <button class="btn btn-sm btn-outline" onclick="openMsg('${targetId}')">Message</button>
-                        ${showCancel ? `<button class="btn btn-sm btn-danger" onclick="confirmCancel('${b.id}')">Cancel Session</button>` : ''}
+                    <div class="action-btn-group" style="display: flex; gap: 8px; align-items: center;">
+                        ${showMessage ? `<button class="btn btn-sm btn-outline" onclick="openMsg('${targetId}')">Message</button>` : ''}
+                        ${actionBtn}
+                        ${showCancel ? `<button class="btn btn-sm btn-danger" onclick="confirmCancel('${b.id}')">Cancel</button>` : ''}
+                        ${showTrash ? `<button class="btn btn-sm" style="color: #666; border: 1px solid #ccc; padding: 6px 10px;" onclick="deleteBookingWrapper('${b.id}')" title="Clear Booking"><i class="fas fa-trash"></i> 🗑️</button>` : ''}
                     </div>
                 </div>
             </div>
         `}).join('');
+
+        // Helper for Review Modal
+        window.openReviewModal = (bookingId, revieweeId) => {
+            const modal = document.createElement('div');
+            Object.assign(modal.style, {
+                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999'
+            });
+            modal.innerHTML = `
+                <div style="background: white; padding: 24px; border-radius: 12px; width: 400px; max-width: 90%;">
+                    <h3 style="margin-top:0;">Rate Session</h3>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:500;">Rating</label>
+                        <select id="review-rating" class="form-select" style="width: 100%; padding: 8px;">
+                            <option value="5">⭐⭐⭐⭐⭐ (Excellent)</option>
+                            <option value="4">⭐⭐⭐⭐ (Good)</option>
+                            <option value="3">⭐⭐⭐ (Average)</option>
+                            <option value="2">⭐⭐ (Poor)</option>
+                            <option value="1">⭐ (Terrible)</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label style="display:block; margin-bottom:8px; font-weight:500;">Comment</label>
+                        <textarea id="review-comment" class="form-input" rows="3" style="width: 100%; padding: 8px;" placeholder="How was your session?"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button id="cancel-review" class="btn btn-outline">Cancel</button>
+                        <button id="submit-review" class="btn btn-primary">Submit Review</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('cancel-review').onclick = () => modal.remove();
+            document.getElementById('submit-review').onclick = async () => {
+                const btn = document.getElementById('submit-review');
+                btn.textContent = 'Submitting...';
+                btn.disabled = true;
+
+                const rating = document.getElementById('review-rating').value;
+                const comment = document.getElementById('review-comment').value;
+
+                const { error } = await booking.submitReview({
+                    booking_id: bookingId,
+                    reviewer_id: user.id,
+                    reviewee_id: revieweeId,
+                    rating: parseInt(rating),
+                    comment
+                });
+
+                if (error) {
+                    alert('Error submitting review: ' + error.message);
+                    btn.textContent = 'Submit Review';
+                    btn.disabled = false;
+                } else {
+                    modal.remove();
+                    loadBookings(); // Refresh UI
+                }
+            };
+        };
+
+
+        // Helper for Delete (Trash) - Custom Modal
+        window.deleteBookingWrapper = (id) => {
+            const modal = document.createElement('div');
+            Object.assign(modal.style, {
+                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999',
+                backdropFilter: 'blur(4px)'
+            });
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 32px; border-radius: 16px; width: 400px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); text-align: center;">
+                    <div style="background: #fee2e2; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                        <i class="fas fa-trash-alt" style="color: #ef4444; font-size: 1.2rem;"></i>
+                    </div>
+                    <h3 style="margin-top: 0; margin-bottom: 8px; color: #111827; font-size: 1.25rem; font-weight: 600;">Delete Booking?</h3>
+                    <p style="color: #6b7280; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">
+                        Are you sure you want to remove this booking from your history? This action cannot be undone.
+                    </p>
+                    <div style="display: flex; gap: 12px; justify-content: center;">
+                        <button id="cancel-delete" class="btn" style="background: white; border: 1px solid #d1d5db; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancel</button>
+                        <button id="confirm-delete" class="btn" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);">Delete</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            // Animate in
+            const card = modal.firstElementChild;
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0';
+            card.style.transition = 'all 0.2s ease-out';
+            requestAnimationFrame(() => {
+                card.style.transform = 'scale(1)';
+                card.style.opacity = '1';
+            });
+
+            document.getElementById('cancel-delete').onclick = () => {
+                card.style.transform = 'scale(0.95)';
+                card.style.opacity = '0';
+                setTimeout(() => modal.remove(), 200);
+            };
+
+            document.getElementById('confirm-delete').onclick = async () => {
+                const btn = document.getElementById('confirm-delete');
+                btn.textContent = 'Deleting...';
+                btn.disabled = true;
+
+                await booking.deleteBooking(id);
+
+                card.style.transform = 'scale(0.95)';
+                card.style.opacity = '0';
+                setTimeout(() => {
+                    modal.remove();
+                    loadBookings();
+                }, 200);
+            };
+        };
+
+        window.payNow = async (id) => {
+            // Show Mock Stripe Modal
+            const modal = document.createElement('div');
+            Object.assign(modal.style, {
+                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999'
+            });
+
+            modal.innerHTML = `
+                <div style="background: white; padding: 24px; border-radius: 12px; width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top:0; margin-bottom: 24px; text-align: center; font-family: 'Inter', sans-serif;">Secure Checkout</h3>
+                    
+                    <!-- Stripe Demo Card Mock -->
+                    <div style="background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+                            <div style="width: 32px; height: 20px; background: #e9ecef; border-radius: 4px; border: 1px solid #ced4da;"></div>
+                            <span style="font-weight: 600; font-size: 0.9rem; color: #495057;">TEST CARD</span>
+                        </div>
+                        <div style="font-family: monospace; font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 12px; color: #212529;">4242 4242 4242 4242</div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: #6c757d;">
+                            <span>Exp: 12/28</span>
+                            <span>CVC: 123</span>
+                        </div>
+                    </div>
+                    
+                    <div style="color: #2e7d32; font-size: 0.8rem; display: flex; align-items: center; gap: 6px; margin-bottom: 24px; justify-content: center;">
+                        <div style="width: 8px; height: 8px; background: #2e7d32; border-radius: 50%;"></div>
+                        Secure Payment Simulator Active
+                    </div>
+
+                    <div style="display: flex; gap: 12px;">
+                        <button id="cancel-pay" class="btn btn-outline" style="flex: 1;">Cancel</button>
+                        <button id="confirm-pay" class="btn btn-primary" style="flex: 1;">Pay Now</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('cancel-pay').onclick = () => modal.remove();
+
+            document.getElementById('confirm-pay').onclick = async () => {
+                const btn = document.getElementById('confirm-pay');
+                btn.textContent = 'Processing...';
+                btn.disabled = true;
+
+                await new Promise(r => setTimeout(r, 1500)); // Simulate processing
+
+                await booking.completePayment(id);
+                modal.remove();
+
+                // Show success toast or alert
+                const toast = document.createElement('div');
+                toast.textContent = 'Payment Successful! Session Confirmed.';
+                Object.assign(toast.style, {
+                    position: 'fixed', bottom: '24px', right: '24px', padding: '16px 24px',
+                    background: '#2e7d32', color: 'white', borderRadius: '8px', zIndex: '10000',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                });
+                document.body.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+
+                loadBookings();
+            };
+        };
     }
 
     async function loadConversations() {
@@ -236,24 +465,74 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list) return;
 
         const { data: { user } } = await supabase.auth.getUser();
-        const { data: reqs } = await connections.getRequests(user.id);
+
+        // Fetch bookings needing approval
+        // Role check: Only providers (tutors/counselors) should see this generally, but code handles it via tab visibility.
+        // Assuming user.id is provider_id
+        const { data: reqs } = await supabase
+            .from('bookings')
+            .select('*, profiles:student_id(full_name)')
+            .eq('provider_id', user.id)
+            .in('status', ['pending_approval', 'approved_pending_payment']);
 
         if (!reqs || reqs.length === 0) {
-            list.innerHTML = '<p>No pending requests.</p>';
-        } else {
-            list.innerHTML = reqs.map(r => `
-                <div style="display: flex; justify-content: space-between; padding: 12px; border: 1px solid #eee; margin-bottom: 8px; border-radius: 8px;">
-                    <span>${r.profiles.full_name} wants to connect</span>
-                    <div>
-                        <button onclick="acceptReq('${r.id}')" class="btn btn-primary btn-sm">Accept</button>
-                    </div>
+            list.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    <p style="font-size: 1.1rem; margin-bottom: 12px;">No pending requests.</p>
+                    <p style="font-size: 0.9rem;">New requests from students will appear here.</p>
                 </div>
-            `).join('');
+            `;
+        } else {
+            list.innerHTML = reqs.map(r => {
+                const isPending = r.status === 'pending_approval';
+
+                let actionsHTML = '';
+                if (isPending) {
+                    actionsHTML = `
+                        <div style="display: flex; gap: 8px;">
+                            <button onclick="rejectBooking('${r.id}')" class="btn btn-sm btn-outline">Reject</button>
+                            <button onclick="approveBooking('${r.id}')" class="btn btn-primary btn-sm">Approve</button>
+                        </div>
+                    `;
+                } else {
+                    actionsHTML = `
+                         <div class="status-badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; font-weight: 500;">Awaiting Payment</div>
+                    `;
+                }
+
+                return `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; margin-bottom: 12px; border-radius: 8px; background: white;">
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 4px;">${r.profiles.full_name}</div>
+                        <div style="font-size: 0.9rem; color: #666;">
+                            Requested: ${new Date(r.scheduled_start).toLocaleDateString()} @ ${new Date(r.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div style="font-size: 0.8rem; color: #888; margin-top: 4px;">Price: $${r.price_total || r.price}</div>
+                    </div>
+                    ${actionsHTML}
+                </div>
+            `}).join('');
         }
 
-        window.acceptReq = async (id) => {
-            await connections.acceptRequest(id);
-            loadRequests();
+        window.approveBooking = async (id) => {
+            const btn = document.querySelector(`button[onclick="approveBooking('${id}')"]`);
+            if (btn) {
+                btn.textContent = 'Approving...';
+                btn.disabled = true;
+            }
+            await booking.approveBooking(id);
+            loadRequests(); // Refresh list
+        };
+
+        window.rejectBooking = async (id) => {
+            if (!confirm('Are you sure you want to reject this request?')) return;
+            const btn = document.querySelector(`button[onclick="rejectBooking('${id}')"]`);
+            if (btn) {
+                btn.textContent = 'Rejecting...';
+                btn.disabled = true;
+            }
+            await booking.rejectBooking(id);
+            loadRequests(); // Refresh list
         };
     }
 
@@ -488,40 +767,214 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    // Availability Form Handler
-    const availabilityForm = document.getElementById('availability-form');
-    if (availabilityForm) {
-        availabilityForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btn = document.getElementById('save-availability');
-            btn.textContent = 'Generating Slots...';
-            btn.disabled = true;
+    // --- Calendar Availability Logic ---
+    const calContainer = document.querySelector('.calendar-grid-container');
+    if (calContainer) {
+        let currentDate = new Date();
+        // Snap to Monday of current week
+        const day = currentDate.getDay();
+        const diff = currentDate.getDate() - day + (day === 0 ? -6 : 1);
+        currentDate.setDate(diff);
+        currentDate.setHours(0, 0, 0, 0);
 
-            const schedule = {};
-            const formData = new FormData(availabilityForm);
-            const days = formData.getAll('day'); // ['Mon', 'Wed']
+        let activeSlots = new Set(); // Stores "YYYY-MM-DDTHH:mm:00.000Z" strings
+        let originalSlots = new Set(); // To detect changes
+        let bookedSlots = new Set(); // To prevent modification
 
-            days.forEach(day => {
-                const start = formData.get(`start-${day}`); // "09:00"
-                const end = formData.get(`end-${day}`);     // "17:00"
-                if (start && end) {
-                    schedule[day] = [`${start}-${end}`];
+        const renderCalendar = async () => {
+            const headerRow = document.getElementById('cal-header-row');
+            const body = document.getElementById('cal-body');
+            const rangeLabel = document.getElementById('cal-current-range');
+
+            // Clear
+            headerRow.innerHTML = '<div class="calendar-header-cell"></div>'; // Corner
+            body.innerHTML = '';
+
+            // 1. Render Header (Days)
+            const weekDates = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(currentDate);
+                d.setDate(d.getDate() + i);
+                weekDates.push(d);
+
+                const cell = document.createElement('div');
+                cell.className = 'calendar-header-cell';
+                cell.innerHTML = `
+                    <div>${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                    <div style="font-size: 1.1rem; color: var(--text-primary);">${d.getDate()}</div>
+                `;
+                headerRow.appendChild(cell);
+            }
+
+            // Update Range Label
+            const startStr = weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const endStr = weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            rangeLabel.textContent = `${startStr} - ${endStr}, ${weekDates[6].getFullYear()}`;
+
+            // 2. Render Body (Time Rows)
+            // 9:00 to 17:00 (16 slots of 30 mins)
+            // Full 24 Hours
+            const startHour = 0;
+            const endHour = 24;
+
+            for (let h = startHour; h < endHour; h++) {
+                for (let m = 0; m < 60; m += 30) {
+                    // Time Label
+                    const timeCell = document.createElement('div');
+                    timeCell.className = 'time-label-col time-label-cell';
+                    timeCell.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    timeCell.style.gridColumn = '1';
+                    // Calculated row? simple grid flow works if we insert in order
+                    body.appendChild(timeCell);
+
+                    // Day Cells
+                    for (let d = 0; d < 7; d++) {
+                        const cellDate = new Date(weekDates[d]);
+                        cellDate.setHours(h, m, 0, 0);
+                        const iso = cellDate.toISOString();
+
+                        const cell = document.createElement('div');
+                        cell.className = 'slot-cell';
+                        cell.dataset.iso = iso;
+
+                        // Interaction
+                        cell.addEventListener('click', () => toggleSlot(cell, iso));
+                        body.appendChild(cell);
+                    }
+                }
+            }
+
+            // 3. Load Data
+            await loadSlots();
+        };
+
+        const loadSlots = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            const start = new Date(currentDate);
+            const end = new Date(currentDate);
+            end.setDate(end.getDate() + 7);
+
+            const { data, error } = await booking.getSlotsForRange(user.id, start.toISOString(), end.toISOString());
+
+            if (data) {
+                activeSlots.clear();
+                originalSlots.clear();
+                bookedSlots.clear();
+
+                data.forEach(s => {
+                    const normalizedTime = new Date(s.start_time).toISOString();
+                    activeSlots.add(normalizedTime);
+                    originalSlots.add(normalizedTime);
+                    if (s.is_booked) bookedSlots.add(normalizedTime);
+                });
+
+                // Update UI
+                updateUI();
+            }
+        };
+
+        const updateUI = () => {
+            document.querySelectorAll('.slot-cell').forEach(cell => {
+                const iso = cell.dataset.iso;
+                cell.className = 'slot-cell'; // Reset
+
+                if (bookedSlots.has(iso)) {
+                    cell.classList.add('booked');
+                } else if (activeSlots.has(iso)) {
+                    cell.classList.add('active');
                 }
             });
 
-            const { data: { user } } = await supabase.auth.getUser();
-            const { count, error } = await booking.setAvailability(user.id, schedule);
+            // Check dirty
+            checkDirty();
+        };
 
-            btn.textContent = 'Save & Generate Slots';
+        const toggleSlot = (cell, iso) => {
+            if (bookedSlots.has(iso)) return; // Locked
+
+            if (activeSlots.has(iso)) {
+                activeSlots.delete(iso);
+                cell.classList.remove('active');
+            } else {
+                activeSlots.add(iso);
+                cell.classList.add('active');
+            }
+            checkDirty();
+        };
+
+        const checkDirty = () => {
+            const saveBar = document.getElementById('calendar-save-bar');
+
+            // Diff
+            let isDirty = false;
+            if (activeSlots.size !== originalSlots.size) isDirty = true;
+            else {
+                for (let iso of activeSlots) if (!originalSlots.has(iso)) isDirty = true;
+            }
+
+            if (isDirty) saveBar.classList.add('visible');
+            else saveBar.classList.remove('visible');
+        };
+
+        // Buttons
+        document.getElementById('cal-prev-week').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() - 7);
+            renderCalendar();
+        });
+
+        document.getElementById('cal-next-week').addEventListener('click', () => {
+            currentDate.setDate(currentDate.getDate() + 7);
+            renderCalendar();
+        });
+
+        document.getElementById('cal-discard-btn').addEventListener('click', () => {
+            activeSlots = new Set(originalSlots);
+            updateUI();
+        });
+
+        document.getElementById('cal-save-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('cal-save-btn');
+            btn.textContent = 'Saving...';
+            btn.disabled = true;
+
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // Build Payload
+            // We need to send array of objects { start_time, end_time }
+            const payload = Array.from(activeSlots).map(iso => {
+                const start = new Date(iso);
+                const end = new Date(start.getTime() + 30 * 60000);
+                return { start_time: iso, end_time: end.toISOString() };
+            });
+
+            const startRange = new Date(currentDate);
+            const endRange = new Date(currentDate);
+            endRange.setDate(endRange.getDate() + 7);
+
+            const { added, removed, error } = await booking.updateSlotsForRange(
+                user.id,
+                startRange.toISOString(),
+                endRange.toISOString(),
+                payload
+            );
+
+            btn.textContent = 'Save Changes';
             btn.disabled = false;
 
             if (error) {
                 console.error(error);
-                alert('Failed to update availability.');
+                alert('Failed to save.');
             } else {
-                alert(`Success! Generated ${count} slots for the next 4 weeks.`);
+                // Success
+                originalSlots = new Set(activeSlots);
+                checkDirty();
+                // alert(`Saved! Added ${added}, Removed ${removed} slots.`); // Optional feedback
             }
         });
+
+        // Initial Render
+        // Wait a bit to ensure tab is visible or just render (won't hurt)
+        renderCalendar();
     }
 
     // URL Param Logic (Deep Linking)
@@ -545,7 +998,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activeTabBtn = document.querySelector('.tab-btn.active');
         if (activeTabBtn) {
             // Trigger load function for the default active tab
-            if (activeTabBtn.dataset.tab === 'bookings') loadBookings();
+            if (activeTabBtn.dataset.tab === 'upcoming' || activeTabBtn.dataset.tab === 'bookings') loadBookings();
             if (activeTabBtn.dataset.tab === 'messages') loadConversations();
             if (activeTabBtn.dataset.tab === 'connections') loadConnections();
             if (activeTabBtn.dataset.tab === 'requests') loadRequests();
@@ -563,6 +1016,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (profile) {
             const nameEl = document.getElementById('user-name');
             if (nameEl) nameEl.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}`;
+
+            // Dynamic Dashboard Title
+            const roleTitleEl = document.getElementById('dashboard-role-title');
+            if (roleTitleEl) {
+                if (profile.role === 'counselor') {
+                    roleTitleEl.textContent = 'Counselor Dashboard';
+                    document.title = 'Counselor Dashboard | Connected';
+                } else if (profile.role === 'tutor') {
+                    roleTitleEl.textContent = 'Tutor Dashboard';
+                    document.title = 'Tutor Dashboard | Connected';
+                }
+            }
         }
     }
 

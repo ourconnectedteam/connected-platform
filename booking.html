@@ -203,29 +203,26 @@
                         </div>
                     </div>
 
-                    <!-- STEP 3: Confirmation (Payment) -->
+                    <!-- STEP 3: Confirmation (Request) -->
                     <div id="step-3" class="booking-step" style="display: none;">
-                        <h2 class="section-title">Confirm & Pay</h2>
+                        <h2 class="section-title">Confirm Request</h2>
 
                         <div class="booking-summary-card">
                             <!-- Dynamic summary filled by Js -->
                             <div id="booking-confirmation-details"></div>
                         </div>
 
-                        <!-- Stripe Payment Element -->
-                        <div class="form-section">
-                            <h3>Payment Method</h3>
-                            <div id="payment-element"
-                                style="min-height: 250px; border: 1px dashed #ccc; border-radius: 8px; padding: 20px; text-align: center; color: #888;">
-                                <!-- Stripe Elements will mount here -->
-                                Loading secure payment form...
-                            </div>
+                        <!-- Payment removed -->
+                        <div class="form-section" style="margin-top: 32px;">
+                            <p style="color: var(--text-secondary); text-align: center; font-size: 0.85rem;">By clicking
+                                below, you are sending a booking request. No payment is required until the tutor
+                                approves.</p>
                         </div>
 
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary back-step" data-to="2">Back</button>
-                            <button type="button" class="btn btn-primary" id="btn-confirm-booking">Pay &
-                                Confirm</button>
+                            <button type="button" class="btn btn-primary" id="btn-request-booking">Request
+                                Appointment</button>
                         </div>
                     </div>
 

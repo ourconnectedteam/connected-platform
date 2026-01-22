@@ -104,16 +104,71 @@ export const booking = {
         }
 
         // 2. Create Booking Record
+        // Status: 'pending_approval' (Wait for tutor) -> 'approved_pending_payment' (Wait for student) -> 'confirmed'
         const { data, error } = await supabase.from('bookings').insert({
             student_id: details.student_id,
             provider_id: details.provider_id,
-            status: 'pending_payment',
+            status: 'pending_approval',
             scheduled_start: details.scheduled_start,
             scheduled_end: details.scheduled_end,
             price_total: details.price,
             notes: details.notes
         }).select().single();
 
+        return { data, error };
+    },
+
+    // Approve Booking (Tutor Side)
+    async approveBooking(bookingId) {
+        const { data, error } = await supabase
+            .from('bookings')
+            .update({ status: 'approved_pending_payment' })
+            .eq('id', bookingId)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    // Reject Booking (Tutor Side)
+    async rejectBooking(bookingId) {
+        const { data, error } = await supabase
+            .from('bookings')
+            .update({ status: 'rejected' })
+            .eq('id', bookingId)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    // Complete Payment (Student Side)
+    async completePayment(bookingId) {
+        // 1. Get booking details to find slots
+        const { data: bookingData, error: fetchError } = await supabase
+            .from('bookings')
+            .select('*')
+            .eq('id', bookingId)
+            .single();
+
+        if (fetchError) return { error: fetchError };
+
+        // 2. Mark slots as Booked
+        // We find slots for this provider in this time range
+        const { error: slotError } = await supabase
+            .from('availability_slots')
+            .update({ is_booked: true })
+            .eq('provider_id', bookingData.provider_id)
+            .gte('start_time', bookingData.scheduled_start)
+            .lt('start_time', bookingData.scheduled_end);
+
+        if (slotError) console.error('Error updating slots:', slotError);
+
+        // 3. Update Booking Status
+        const { data, error } = await supabase
+            .from('bookings')
+            .update({ status: 'confirmed' }) // Payment successful
+            .eq('id', bookingId)
+            .select()
+            .single();
         return { data, error };
     },
 
@@ -137,30 +192,67 @@ export const booking = {
     },
 
     // Create Payment Intent (Client-side mock for demo purposes if backend not ready)
-    // In production, this MUST be a call to Supabase Edge Function
     async createPaymentIntent(amount) {
-        // Return a mock result since we don't have a backend function running yet
-        // In a real flow:
-        // const { data, error } = await supabase.functions.invoke('create-payment-intent', { body: { amount } });
-        // return data.clientSecret;
-
-        console.warn('Using MOCK Payment Intent. Payments will not be processed by Stripe real servers.');
+        console.warn('Using MOCK Payment Intent.');
         return 'mock_secret_client_demo';
     },
 
-    async confirmPayment(elements) {
-        if (!this.stripe) await this.initStripe();
-
-        // In real flow:
-        // const result = await this.stripe.confirmPayment({
-        //    elements,
-        //    confirmParams: { return_url: window.location.origin + '/booking-success' },
-        //    redirect: 'if_required' 
-        // });
-
-        // Mocking Success for Demo
-        return { paymentIntent: { status: 'succeeded' } };
+    // Get Slots For Range (Calendar View)
+    async getSlotsForRange(providerId, startTime, endTime) {
+        const { data, error } = await supabase
+            .from('availability_slots')
+            .select('*')
+            .eq('provider_id', providerId)
+            .gte('start_time', startTime)
+            .lt('start_time', endTime);
+        return { data, error };
     },
+
+    // Update Slots For Range
+    // This syncs the frontend "Active" set with the DB for a specific week
+    async updateSlotsForRange(providerId, startTime, endTime, activeSlots) {
+        // activeSlots: Array of { start_time, end_time } that MUST exist
+
+        // 1. Fetch current existing slots in this range
+        const { data: existing, error: fetchError } = await this.getSlotsForRange(providerId, startTime, endTime);
+        if (fetchError) return { error: fetchError };
+
+        // 2. Identify Deltas
+        // A. Slots to DELETE: Exist in DB but NOT in activeSlots (and NOT booked)
+        // B. Slots to INSERT: In activeSlots but NOT in DB
+
+        const existingMap = new Set(existing.map(s => new Date(s.start_time).toISOString()));
+        const activeMap = new Set(activeSlots.map(s => new Date(s.start_time).toISOString()));
+
+        // Delete candidates
+        const toDeleteIds = existing
+            .filter(s => !activeMap.has(new Date(s.start_time).toISOString())) // Not in new set
+            .filter(s => !s.is_booked) // DO NOT delete booked slots
+            .map(s => s.id);
+
+        // Insert candidates
+        const toInsert = activeSlots
+            .filter(s => !existingMap.has(new Date(s.start_time).toISOString()))
+            .map(s => ({
+                provider_id: providerId,
+                start_time: s.start_time,
+                end_time: s.end_time,
+                is_booked: false
+            }));
+
+        // Execute
+        if (toDeleteIds.length > 0) {
+            await supabase.from('availability_slots').delete().in('id', toDeleteIds);
+        }
+
+        if (toInsert.length > 0) {
+            await supabase.from('availability_slots').insert(toInsert);
+        }
+
+        return { success: true, added: toInsert.length, removed: toDeleteIds.length };
+    },
+
+    // Create Booking
 
     // Cancel Booking
     async cancelBooking(bookingId) {
@@ -171,11 +263,26 @@ export const booking = {
             .select()
             .single();
 
-        // Also free up the slot?
-        // In a real app we would want to free the slot in 'availability_slots'
-        // But we need the slot_id from the booking first or a trigger.
-        // For now, let's just mark booking as cancelled.
-
         return { data, error };
+    },
+
+    // Submit Review
+    async submitReview(reviewData) {
+        // reviewData: { booking_id, reviewer_id, reviewee_id, rating, comment }
+        const { data, error } = await supabase
+            .from('reviews')
+            .insert(reviewData)
+            .select()
+            .single();
+        return { data, error };
+    },
+
+    // Delete Booking (Cleanup/Trash)
+    async deleteBooking(bookingId) {
+        const { error } = await supabase
+            .from('bookings')
+            .delete()
+            .eq('id', bookingId);
+        return { error };
     }
 };

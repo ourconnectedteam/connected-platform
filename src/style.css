@@ -833,9 +833,147 @@ body::before {
     /* Increase padding for better separation */
     margin-top: 0;
     border-top: 1px solid var(--border-color);
-    /* Clear divider line */
     background: #fff;
     position: relative;
+    /* Clear divider line */
+}
+
+/* Calendar Availability Editor */
+.calendar-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.calendar-grid-container {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #E5E5E5;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 600px;
+    /* Fixed height for scroll */
+    background: white;
+}
+
+.calendar-header-row {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    background: #FAFAFA;
+    border-bottom: 1px solid #E5E5E5;
+}
+
+.calendar-header-cell {
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    border-right: 1px solid #F0F0F0;
+}
+
+.calendar-body {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    /* auto-fill rows based on content */
+}
+
+.time-label-col {
+    background: #FAFAFA;
+    border-right: 1px solid #E5E5E5;
+    text-align: right;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.time-label-cell {
+    height: 30px;
+    /* 30 min slot height */
+    padding-right: 8px;
+    transform: translateY(-50%);
+    /* Center label on line? No, stick to top */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.day-col {
+    position: relative;
+    border-right: 1px solid #F0F0F0;
+}
+
+.slot-cell {
+    height: 30px;
+    border-bottom: 1px solid #F5F5F5;
+    /* Light grid line */
+    cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+}
+
+.slot-cell:hover {
+    background: #F0F9FF;
+    /* Light Blue Hover */
+}
+
+.slot-cell.active {
+    background: #E3F2FD;
+    /* Blue */
+    border-left: 3px solid #007AFF;
+}
+
+.slot-cell.booked {
+    background: #FFF0F0;
+    /* Red tint */
+    border-left: 3px solid #FF3B30;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.slot-cell.booked::after {
+    content: 'Booked';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 0.7rem;
+    color: #D32F2F;
+}
+
+/* Floating Save Bar */
+.save-bar {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: white;
+    padding: 16px 24px;
+    border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: none;
+    /* hidden by default */
+    align-items: center;
+    gap: 16px;
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+}
+
+.save-bar.visible {
+    display: flex;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
 }
 
 .trust-section .container {

@@ -581,7 +581,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (step3Btn) {
         step3Btn.addEventListener('click', () => {
             // Populate Step 3 summary
-            const step3Container = document.querySelector('#step-3 .section-title');
+            const detailsContainer = document.getElementById('booking-confirmation-details');
+            if (!detailsContainer) return;
 
             // Create summary HTML
             const summaryHTML = `
@@ -599,77 +600,71 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="font-weight: 600;">${document.querySelector('input[name="fullname"]').value}</div>
                         <div style="font-size: 0.9rem;">${document.querySelector('input[name="email"]').value}</div>
                     </div>
+                    <div class="review-item" style="margin-top: 16px; border-top: 1px solid #eee; padding-top: 16px;">
+                        <h4 style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 4px;">Total Price</h4>
+                        <div style="font-weight: 700; font-size: 1.1rem; color: var(--text-primary);">$${window.selectedPrice || '0.00'}</div>
+                        <p style="font-size: 0.8rem; color: var(--text-secondary);">Payable after approval.</p>
+                    </div>
                 </div>
              `;
 
-            // Check if we already appended summary
-            const existingSummary = document.querySelector('.confirmation-review');
-            if (existingSummary) existingSummary.remove();
-
-            step3Container.insertAdjacentHTML('afterend', summaryHTML);
+            detailsContainer.innerHTML = summaryHTML;
         })
     }
 
     // 5. Submit Booking
-    // 5. Submit Booking (Paid)
-    const btnConfirm = document.getElementById('btn-confirm-booking');
-    if (btnConfirm) {
-        btnConfirm.addEventListener('click', async () => {
-            const originalText = btnConfirm.textContent;
-            btnConfirm.textContent = 'Processing Payment...';
-            btnConfirm.disabled = true;
+    // 5. Submit Booking Request (No Payment yet)
+    const btnRequest = document.getElementById('btn-request-booking');
+    if (btnRequest) {
+        btnRequest.addEventListener('click', async () => {
+            const originalText = btnRequest.textContent;
+            btnRequest.textContent = 'Sending Request...';
+            btnRequest.disabled = true;
 
             try {
-                // 1. Confirm Payment (using Stripe or Mock)
-                const { error: paymentError, paymentIntent } = await bookingLib.confirmPayment(stripeElements);
+                // 1. Create Booking in DB (Status: pending_approval)
+                const formData = new FormData(document.getElementById('booking-form-details'));
+                const providerId = new URLSearchParams(window.location.search).get('providerId');
+                const user = await auth.getUser();
 
-                if (paymentError) {
-                    throw new Error(paymentError.message);
+                const bookingDetails = {
+                    student_id: user?.id,
+                    provider_id: providerId,
+                    scheduled_start: window.selectedIsoDate || new Date().toISOString(),
+                    scheduled_end: calculateEndTime(window.selectedIsoDate, window.selectedDuration || 60),
+                    price: window.selectedPrice ? parseFloat(window.selectedPrice) : 60.00,
+                    notes: formData.get('notes'),
+                    slot_ids: window.selectedSlotIds // Pass all selected slots
+                };
+
+                const { error: bookingError } = await bookingLib.createBooking(bookingDetails);
+
+                if (bookingError) {
+                    throw new Error(bookingError.message || 'Failed to create booking request.');
                 }
 
-                if (paymentIntent && paymentIntent.status === 'succeeded') {
-                    // 2. Create Booking in DB
-                    // Gather details
-                    const formData = new FormData(document.getElementById('booking-form-details'));
-                    const providerId = new URLSearchParams(window.location.search).get('providerId');
-                    const user = await auth.getUser();
-
-                    // Mock booking creation if backend fails or for demo
-                    const bookingDetails = {
-                        student_id: user?.id,
-                        provider_id: providerId,
-                        scheduled_start: window.selectedIsoDate || new Date().toISOString(),
-                        scheduled_end: calculateEndTime(window.selectedIsoDate, window.selectedDuration || 60),
-                        price: window.selectedPrice ? parseFloat(window.selectedPrice) : 60.00,
-                        notes: formData.get('notes'),
-                        slot_ids: window.selectedSlotIds // Pass all selected slots
-                    };
-
-                    const { error: bookingError } = await bookingLib.createBooking(bookingDetails);
-                    if (bookingError) console.error('Booking DB error (non-fatal for demo):', bookingError);
-
-                    // Success!
-
-                    // Send Confirmation Email (Async)
-                    const providerName = new URLSearchParams(window.location.search).get('name') || 'Tutor';
-                    email.sendBookingConfirmation({
-                        studentName: formData.get('fullname') || 'Student',
-                        providerName: providerName,
-                        date: window.selectedIsoDate ? new Date(window.selectedIsoDate).toDateString() : 'N/A',
-                        time: window.selectedIsoDate ? new Date(window.selectedIsoDate).toLocaleTimeString() : 'N/A',
-                        link: 'https://zoom.us/j/demo-link'
-                    }).catch(err => console.error('Failed to send email:', err));
-
-                    goToStep(4);
-                } else {
-                    throw new Error('Payment failed. Please try again.');
+                // Success!
+                // Update Success Message UI
+                const successDiv = document.querySelector('#step-4 .success-message');
+                if (successDiv) {
+                    successDiv.innerHTML = `
+                        <div style="font-size: 3rem; margin-bottom: 16px;">📨</div>
+                        <h2 style="font-size: 2rem; margin-bottom: 16px;">Request Sent!</h2>
+                        <p style="color: var(--text-secondary); margin-bottom: 32px;">
+                            Your booking request has been sent to the tutor.<br>
+                            You will be notified when they approve it.
+                        </p>
+                        <a href="dashboard-student.html" class="btn btn-primary">Go to Dashboard</a>
+                    `;
                 }
+
+                goToStep(4);
 
             } catch (err) {
                 console.error(err);
                 alert(`Error: ${err.message}`);
-                btnConfirm.textContent = originalText;
-                btnConfirm.disabled = false;
+                btnRequest.textContent = originalText;
+                btnRequest.disabled = false;
             }
         });
     }
