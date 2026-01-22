@@ -619,12 +619,23 @@ document.addEventListener('DOMContentLoaded', async () => {
                     
                     <div class="profile-section-title">Personal Information</div>
                     
-                    <div class="avatar-upload-row" style="margin-bottom: 24px;">
-                        <img src="${profile.avatar_url || 'https://placehold.co/100'}" class="avatar-preview" id="avatar-preview-img">
+                    <div class="avatar-upload-row" style="margin-bottom: 24px; align-items: start;">
+                        <img src="${profile.avatar_url || 'https://placehold.co/100'}" class="avatar-preview" id="avatar-preview-img" style="width: 100px; height: 100px; object-fit: cover; border-radius: 50%;">
+                        
                         <div style="flex: 1;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Avatar URL</label>
-                            <input type="text" id="prof-avatar" class="form-input" value="${profile.avatar_url || ''}" placeholder="https://example.com/image.jpg">
-                            <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">Paste an image address for now.</div>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 500;">Profile Picture</label>
+                            
+                            <!-- Hidden input to store URL for the form submission -->
+                            <input type="hidden" id="prof-avatar" value="${profile.avatar_url || ''}">
+                            
+                            <!-- Drop Zone -->
+                            <div id="avatar-drop-zone" style="border: 2px dashed #ccc; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;">
+                                <div style="font-size: 2rem; color: #ccc; margin-bottom: 8px;">📷</div>
+                                <p style="margin: 0; font-size: 0.9rem; color: #666;">Drag & Drop your image here</p>
+                                <p style="margin: 4px 0 0; font-size: 0.8rem; color: #999;">or click to browse</p>
+                                <input type="file" id="avatar-file-input" accept="image/*" hidden>
+                            </div>
+                            <div id="upload-status" style="font-size: 0.8rem; color: #666; margin-top: 8px; display: none;">Uploading...</div>
                         </div>
                     </div>
 
@@ -674,6 +685,81 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </form>
             </div>
         `;
+
+        // --- Avatar Upload Logic ---
+        const dropZone = document.getElementById('avatar-drop-zone');
+        const fileInput = document.getElementById('avatar-file-input');
+        const statusDiv = document.getElementById('upload-status');
+        const previewImg = document.getElementById('avatar-preview-img');
+        const hiddenInput = document.getElementById('prof-avatar');
+
+        // Styles
+        const highlight = () => { dropZone.style.borderColor = '#007AFF'; dropZone.style.background = '#eff6ff'; };
+        const unhighlight = () => { dropZone.style.borderColor = '#ccc'; dropZone.style.background = '#fafafa'; };
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); highlight(); }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); unhighlight(); }, false);
+        });
+
+        // Handle Drop
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        // Handle Click
+        dropZone.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+        const handleFiles = async (files) => {
+            if (files.length === 0) return;
+            const file = files[0];
+
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload an image file.');
+                return;
+            }
+
+            // UI Update
+            statusDiv.style.display = 'block';
+            statusDiv.textContent = 'Uploading...';
+            statusDiv.style.color = '#666';
+
+            try {
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${user.id} -${Date.now()}.${fileExt} `;
+                const filePath = `${fileName} `;
+
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+
+                // Success
+                statusDiv.textContent = 'Upload complete!';
+                statusDiv.style.color = 'green';
+
+                // Update Preview & Hidden Input
+                previewImg.src = publicUrl;
+                hiddenInput.value = publicUrl;
+
+            } catch (error) {
+                console.error('Upload Error:', error);
+                statusDiv.textContent = 'Upload failed: ' + error.message;
+                statusDiv.style.color = 'red';
+            }
+        };
+
 
         const form = document.getElementById('profile-form');
         form.addEventListener('submit', async (e) => {
@@ -750,7 +836,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showMsg('Profile updated successfully!', 'green');
                 // Update header name specific to DOM
                 const nameEl = document.getElementById('user-name');
-                if (nameEl) nameEl.textContent = `Welcome back, ${baseUpdates.full_name.split(' ')[0]}`;
+                if (nameEl) nameEl.textContent = `Welcome back, ${baseUpdates.full_name.split(' ')[0]} `;
 
                 // Update avatar preview
                 const previewImg = document.getElementById('avatar-preview-img');
@@ -800,16 +886,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cell = document.createElement('div');
                 cell.className = 'calendar-header-cell';
                 cell.innerHTML = `
-                    <div>${d.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-                    <div style="font-size: 1.1rem; color: var(--text-primary);">${d.getDate()}</div>
-                `;
+            < div > ${d.toLocaleDateString('en-US', { weekday: 'short' })}</div >
+                <div style="font-size: 1.1rem; color: var(--text-primary);">${d.getDate()}</div>
+        `;
                 headerRow.appendChild(cell);
             }
 
             // Update Range Label
             const startStr = weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
             const endStr = weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            rangeLabel.textContent = `${startStr} - ${endStr}, ${weekDates[6].getFullYear()}`;
+            rangeLabel.textContent = `${startStr} - ${endStr}, ${weekDates[6].getFullYear()} `;
 
             // 2. Render Body (Time Rows)
             // 9:00 to 17:00 (16 slots of 30 mins)
@@ -822,7 +908,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     // Time Label
                     const timeCell = document.createElement('div');
                     timeCell.className = 'time-label-col time-label-cell';
-                    timeCell.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+                    timeCell.textContent = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')} `;
                     timeCell.style.gridColumn = '1';
                     // Calculated row? simple grid flow works if we insert in order
                     body.appendChild(timeCell);
@@ -968,7 +1054,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Success
                 originalSlots = new Set(activeSlots);
                 checkDirty();
-                // alert(`Saved! Added ${added}, Removed ${removed} slots.`); // Optional feedback
+                // alert(`Saved! Added ${ added }, Removed ${ removed } slots.`); // Optional feedback
             }
         });
 
@@ -983,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const convIdParam = urlParams.get('convId');
 
     if (tabParam) {
-        const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabParam}"]`);
+        const tabBtn = document.querySelector(`.tab - btn[data - tab="${tabParam}"]`);
         if (tabBtn) {
             tabBtn.click();
             // If messages tab and convId present, load chat
@@ -1015,7 +1101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const { data: profile } = await auth.getProfile(user.id);
         if (profile) {
             const nameEl = document.getElementById('user-name');
-            if (nameEl) nameEl.textContent = `Welcome back, ${profile.full_name.split(' ')[0]}`;
+            if (nameEl) nameEl.textContent = `Welcome back, ${profile.full_name.split(' ')[0]} `;
 
             // Dynamic Dashboard Title
             const roleTitleEl = document.getElementById('dashboard-role-title');
@@ -1050,12 +1136,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Simple hack: poll for the item or reload
             setTimeout(() => {
                 // Try to click the item in the list if it exists
-                const item = document.querySelector(`.chat-item[data-id="${conv.id}"]`);
+                const item = document.querySelector(`.chat - item[data - id="${conv.id}"]`);
                 if (item) item.click();
                 else {
                     // If list didn't load it yet (new conv), force reload
                     loadConversations().then(() => {
-                        const newItem = document.querySelector(`.chat-item[data-id="${conv.id}"]`);
+                        const newItem = document.querySelector(`.chat - item[data - id="${conv.id}"]`);
                         if (newItem) newItem.click();
                     });
                 }
@@ -1078,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
             </div>
-        `;
+            `;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
     }
 

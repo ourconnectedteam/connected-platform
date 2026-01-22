@@ -76,21 +76,21 @@ import { initParallax } from './components/parallax.js';
                 if (ctaSection) {
                     // 10 Unique Testimonials
                     const testimonials = [
-                        { text: "James helped me boost my Math AA grade from a 4 to a 7 in just two months!", author: "Sarah Jenkins", role: "IB Student • 43/45", initial: "S" },
-                        { text: "My university counselor was a lifesaver. Got into my dream UK uni!", author: "Michael Chen", role: "Accepted to UCL", initial: "M" },
-                        { text: "Finding a study buddy for HL Physics made revision much less lonely.", author: "Elena Rodriguez", role: "IB Student • Madrid", initial: "E" },
-                        { text: "The dashboard makes managing lessons easy. I can focus on teaching.", author: "David Kim", role: "Chemistry Tutor", initial: "D" },
-                        { text: "Finally understood Electric Fields thanks to my tutor. Huge relief.", author: "Jessica Wu", role: "Physics HL Student", initial: "J" },
-                        { text: "The essay structure tips for English A were gold. Recommended!", author: "Thomas Müller", role: "IB Student • Berlin", initial: "T" },
-                        { text: "Bio HL notes I shared got me connected with great study partners.", author: "Aisha Khan", role: "Biology HL", initial: "A" },
-                        { text: "Real-world Econ examples helped me ace my IA. Thanks!", author: "Lucas Silva", role: "Economics SL", initial: "L" },
-                        { text: "Super simple booking process. No back-and-forth emails.", author: "Ryan O'Connell", role: "Business Mgmt Tutor", initial: "R" },
-                        { text: "This platform is exactly what I wish I had in DP1. Amazing.", author: "Sophie Dubois", role: "IB Alumni • 44 Points", initial: "S" }
+                        { text: "James helped me boost my Math AA grade from a 4 to a 7 in just two months!", author: "Sarah Jenkins", role: "IB Student • 43/45", initial: "S", flag: "🇺🇸" },
+                        { text: "My university counselor was a lifesaver. Got into my dream UK uni!", author: "Michael Chen", role: "Accepted to UCL", initial: "M", flag: "🇬🇧" },
+                        { text: "Finding a study buddy for HL Physics made revision much less lonely.", author: "Elena Rodriguez", role: "IB Student • Madrid", initial: "E", flag: "🇪🇸" },
+                        { text: "The dashboard makes managing lessons easy. I can focus on teaching.", author: "David Kim", role: "Chemistry Tutor", initial: "D", flag: "🇰🇷" },
+                        { text: "Finally understood Electric Fields thanks to my tutor. Huge relief.", author: "Jessica Wu", role: "Physics HL Student", initial: "J", flag: "🇸🇬" },
+                        { text: "The essay structure tips for English A were gold. Recommended!", author: "Thomas Müller", role: "IB Student • Berlin", initial: "T", flag: "🇩🇪" },
+                        { text: "Bio HL notes I shared got me connected with great study partners.", author: "Aisha Khan", role: "Biology HL", initial: "A", flag: "🇮🇳" },
+                        { text: "Real-world Econ examples helped me ace my IA. Thanks!", author: "Lucas Silva", role: "Economics SL", initial: "L", flag: "🇧🇷" },
+                        { text: "Super simple booking process. No back-and-forth emails.", author: "Ryan O'Connell", role: "Business Mgmt Tutor", initial: "R", flag: "🇮🇪" },
+                        { text: "This platform is exactly what I wish I had in DP1. Amazing.", author: "Sophie Dubois", role: "IB Alumni • 44 Points", initial: "S", flag: "🇫🇷" }
                     ];
 
                     // Generate Cards HTML (Duplicate array for seamless infinite scroll)
                     const cardsHtml = [...testimonials, ...testimonials].map(t => `
-                        <div class="testimonial-card">
+                        <div class="testimonial-card" style="position: relative;">
                             <div class="t-rating">★★★★★</div>
                             <p class="t-text">"${t.text}"</p>
                             <div class="t-author">
@@ -99,6 +99,9 @@ import { initParallax } from './components/parallax.js';
                                     <h4>${t.author}</h4>
                                     <p>${t.role}</p>
                                 </div>
+                            </div>
+                            <div style="position: absolute; bottom: 20px; right: 24px; font-size: 1.5rem; opacity: 0.8;" title="Student Location">
+                                ${t.flag}
                             </div>
                         </div>
                     `).join('');
@@ -146,6 +149,84 @@ import { initParallax } from './components/parallax.js';
             <a href="/src/auth.html#login" class="btn btn-sm btn-secondary btn-white">Log In</a>
             <a href="/src/auth.html#signup" class="btn btn-sm btn-primary">Sign Up</a>
         `;
+    }
+
+    // --- Hero Search Logic ---
+    const searchInput = document.querySelector('.hero-search-input');
+    if (searchInput) {
+        const wrapper = searchInput.parentElement;
+        wrapper.style.position = 'relative'; // Ensure positioning context
+
+        // Create Dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'search-results-dropdown';
+        wrapper.appendChild(dropdown);
+
+        // Debounce Function
+        const debounce = (func, wait) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        };
+
+        // Search Handler
+        const handleSearch = async (e) => {
+            const query = e.target.value.trim();
+
+            if (query.length < 2) {
+                dropdown.style.display = 'none';
+                dropdown.innerHTML = '';
+                return;
+            }
+
+            // Fetch from Supabase
+            const { supabase } = await import('./lib/supabase.js');
+            const { data: results, error } = await supabase
+                .from('profiles')
+                .select('id, full_name, role, avatar_url')
+                .ilike('full_name', `%${query}%`)
+                .limit(5);
+
+            if (error) {
+                console.error('Search error:', error);
+                return;
+            }
+
+            dropdown.innerHTML = '';
+            if (results && results.length > 0) {
+                dropdown.style.display = 'block';
+                results.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = 'search-result-item';
+                    item.innerHTML = `
+                        <img src="${user.avatar_url || 'https://placehold.co/32'}" class="search-result-avatar">
+                        <div class="search-result-info">
+                            <span class="search-result-name">${user.full_name}</span>
+                            <span class="search-result-role">${user.role}</span>
+                        </div>
+                    `;
+                    item.addEventListener('click', () => {
+                        // Redirect to profile
+                        window.location.href = `/profile.html?id=${user.id}`;
+                    });
+                    dropdown.appendChild(item);
+                });
+            } else {
+                dropdown.style.display = 'block';
+                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 0.9rem;">No results found.</div>';
+            }
+        };
+
+        searchInput.addEventListener('input', debounce(handleSearch, 300));
+
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!wrapper.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
     }
 })();
 
