@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (tab.dataset.tab === 'messages') loadConversations();
                 if (tab.dataset.tab === 'connections') loadConnections();
                 if (tab.dataset.tab === 'requests') loadRequests();
+                if (tab.dataset.tab === 'requests') loadRequests();
+                if (tab.dataset.tab === 'saved') loadSavedUsers();
                 if (tab.dataset.tab === 'profile') loadProfile();
             }
         });
@@ -366,13 +368,19 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // Auto-select first conversation
+        // Auto-select conversation (Deep link or First)
         if (conversations.length > 0) {
-            const firstItem = container.querySelector('.chat-item');
-            if (firstItem) {
-                firstItem.classList.add('active');
-                const matchedConv = conversations.find(c => c.id === firstItem.dataset.id);
-                loadChat(firstItem.dataset.id, matchedConv?.otherUser);
+            let targetId = conversations[0].id;
+            // Use convIdParam from closure if available and valid
+            if (typeof convIdParam !== 'undefined' && convIdParam && conversations.some(c => c.id === convIdParam)) {
+                targetId = convIdParam;
+            }
+
+            const item = container.querySelector(`.chat-item[data-id="${targetId}"]`);
+            if (item) {
+                item.classList.add('active');
+                const matchedConv = conversations.find(c => c.id === targetId);
+                loadChat(targetId, matchedConv?.otherUser);
             }
         }
     }
@@ -382,11 +390,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!chatArea) return;
 
         // Try to find otherUser from DOM if not passed (e.g. click handler)
+        // Fetch conversation details if otherUser is missing (e.g. deep link)
         if (!otherUser) {
-            // We can't easily get it unless we stored it. 
-            // But wait, the click handler has access to data attributes if we added them, 
-            // or we can just fetch the conversation again or pass it from the click handler.
-            // Better approach: Update the click handler closure.
+            const { data: { user } } = await supabase.auth.getUser();
+            const { data: convMembers } = await supabase
+                .from('conversation_members')
+                .select('profiles(full_name, avatar_url, role)')
+                .eq('conversation_id', convId)
+                .neq('user_id', user.id)
+                .single();
+
+            if (convMembers && convMembers.profiles) {
+                otherUser = convMembers.profiles;
+            }
         }
 
         // Show loading state elegantly
@@ -536,6 +552,125 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     }
 
+    async function loadSavedUsers() {
+        const list = document.getElementById('saved-list');
+        if (!list) return;
+        list.innerHTML = '<p style="text-align:center; color:#666;">Loading saved profiles...</p>';
+
+        const { data: { user } } = await supabase.auth.getUser();
+
+        // 1. Get saved IDs
+        const { data: savedItems, error } = await supabase
+            .from('saved_users')
+            .select('saved_profile_id')
+            .eq('user_id', user.id);
+
+        if (!savedItems || savedItems.length === 0) {
+            list.innerHTML = `
+                <div style="text-align: center; padding: 60px 20px; color: #888;">
+                    <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;">🔖</div>
+                    <p style="font-size: 1.1rem; margin-bottom: 12px; font-weight: 500;">No saved profiles yet.</p>
+                    <p style="font-size: 0.9rem;">Browse tutors or counselors and save them to find them here.</p>
+                    <div style="margin-top: 24px; display: flex; gap: 12px; justify-content: center;">
+                        <a href="/tutors.html" class="btn btn-primary">Find Tutors</a>
+                        <a href="/counselors.html" class="btn btn-secondary">Find Counselors</a>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // 2. Fetch Profiles with more details
+        const ids = savedItems.map(i => i.saved_profile_id);
+        const { data: profiles } = await supabase
+            .from('profiles')
+            .select('*, tutor_profiles(subjects, hourly_rate, rating_avg, rating_count), counselor_profiles(specialties, hourly_rate, rating_avg, rating_count)')
+            .in('id', ids);
+
+        if (!profiles) {
+            list.innerHTML = '<p>Error loading profiles.</p>';
+            return;
+        }
+
+        list.innerHTML = profiles.map(p => {
+            // Determine Role Details
+            let details = {};
+            let isProvider = false;
+            let subTextStr = "";
+
+            if (p.role === 'tutor' && p.tutor_profiles && p.tutor_profiles.length > 0) {
+                details = p.tutor_profiles[0];
+                isProvider = true;
+                subTextStr = details.subjects ? details.subjects.join(', ') : 'Tutor';
+            } else if (p.role === 'counselor' && p.counselor_profiles && p.counselor_profiles.length > 0) {
+                details = p.counselor_profiles[0];
+                isProvider = true;
+                subTextStr = details.specialties ? details.specialties.join(', ') : 'Counselor';
+            } else {
+                subTextStr = p.role.charAt(0).toUpperCase() + p.role.slice(1);
+            }
+
+            const rating = details.rating_avg || 5.0;
+            const reviewCount = details.rating_count || 0;
+            const price = details.hourly_rate ? `$${details.hourly_rate}` : 'Contact';
+            const bioSnippet = p.bio || `Experienced ${p.role} ready to help you succeed.`;
+
+            return `
+            <div class="saved-user-card" style="display: flex; gap: 24px; padding: 24px; border: 1px solid #E5E7EB; border-radius: 16px; background: white; margin-bottom: 20px; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s;">
+                <!-- Left: Avatar -->
+                <div style="flex-shrink: 0; position: relative;">
+                    <img src="${p.avatar_url || 'https://placehold.co/150'}" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; border: 1px solid #F3F4F6;">
+                </div>
+
+                <!-- Middle: Info -->
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 2px;">
+                    <h3 style="margin: 0 0 6px 0; font-size: 1.25rem; font-weight: 700; color: #111; letter-spacing: -0.01em;">
+                        ${p.full_name}
+                        ${p.verified ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="#3B82F6" style="vertical-align: middle; margin-left: 6px;"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' : ''}
+                    </h3>
+                    
+                    <div style="color: #6B7280; font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span>${subTextStr}</span>
+                        <span style="color: #E5E7EB;">|</span>
+                        <span>🇺🇸 United States</span>
+                        <span style="color: #E5E7EB;">|</span>
+                        <span style="display: flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#F59E0B" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                            <span style="color: #6B7280;">${rating} (${reviewCount} reviews)</span>
+                        </span>
+                        <span style="color: #E5E7EB;">|</span>
+                        <span style="display: flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            15 students
+                        </span>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <p style="color: #4B5563; font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            ${bioSnippet}
+                        </p>
+                        <a href="/profile.html?id=${p.id}" style="color: #007AFF; font-weight: 600; text-decoration: none; font-size: 0.9rem; margin-top: 6px; display: inline-block;">Read full bio</a>
+                    </div>
+                </div>
+
+                <!-- Right: Actions & Price -->
+                <div style="width: 180px; padding-left: 24px; border-left: 1px solid #F3F4F6; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <div style="font-size: 1.4rem; font-weight: 700; color: #111;">${price}</div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <button class="btn btn-primary btn-sm" style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;" onclick="window.location.href='/dashboard-student.html?tab=messages&create_conv=${p.id}'">
+                            Message
+                        </button>
+                        
+                        <a href="/profile.html?id=${p.id}" class="btn btn-outline btn-sm" style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;">View Profile</a>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+
     async function loadProfile() {
         const container = document.getElementById('tab-profile');
         if (!container) return;
@@ -660,6 +795,30 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <textarea id="prof-bio" class="form-textarea" rows="3" placeholder="Tell us about yourself...">${profile.bio || ''}</textarea>
                     </div>
 
+                    <div class="profile-section-title" style="margin-top: 24px;">Introduction Video</div>
+                    <div class="avatar-upload-row" style="margin-bottom: 24px; align-items: start;">
+                        <div style="flex: 1;">
+                            <input type="hidden" id="prof-video" value="${profile.introduction_video_url || ''}">
+                             <div id="video-drop-zone" style="border: 2px dashed #ccc; border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fafafa;">
+                                <div style="font-size: 2rem; color: #ccc; margin-bottom: 8px;">🎬</div>
+                                <p style="margin: 0; font-size: 0.9rem; color: #666;">Drag & Drop video (MP4/WebM)</p>
+                                <p style="margin: 4px 0 0; font-size: 0.8rem; color: #999;" id="video-filename">${profile.introduction_video_url ? 'Video Uploaded ✓' : 'or click to browse'}</p>
+                                <input type="file" id="video-file-input" accept="video/*" hidden>
+                            </div>
+                            <div id="video-upload-status" style="font-size: 0.8rem; color: #666; margin-top: 8px; display: none;">Uploading...</div>
+                        </div>
+                    </div>
+
+                     <div class="profile-section-title" style="margin-top: 24px;">Highlights</div>
+                    <div class="form-group">
+                         <label>About your Highlights</label>
+                         <textarea id="prof-highlights" class="form-textarea" rows="4" placeholder="Share a brief phrase about your strengths or what makes you unique...">${(profile.highlights && Array.isArray(profile.highlights) && profile.highlights.length > 0)
+                ? (profile.highlights[0].desc || profile.highlights[0].description || '')
+                : ''
+            }</textarea>
+                         <p style="font-size: 0.8rem; color: #666; margin-top: 4px;">This will be displayed on your profile.</p>
+                    </div>
+
                     <div class="profile-section-title" style="margin-top: 24px;">Social Links</div>
                     <div class="form-grid-3">
                         <div class="form-group">
@@ -718,47 +877,203 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const handleFiles = async (files) => {
             if (files.length === 0) return;
-            const file = files[0];
+            let file = files[0];
 
-            if (!file.type.startsWith('image/')) {
+            if (!file.type.startsWith('image/') && !file.name.toLowerCase().endsWith('.heic')) {
                 alert('Please upload an image file.');
                 return;
             }
 
-            // UI Update
-            statusDiv.style.display = 'block';
-            statusDiv.textContent = 'Uploading...';
-            statusDiv.style.color = '#666';
+            // HEIC Handling
+            if ((file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) && window.heic2any) {
+                const statusDiv = document.getElementById('upload-status');
+                statusDiv.style.display = 'block';
+                statusDiv.textContent = 'Converting HEIC image...';
+                statusDiv.style.color = '#666';
+
+                try {
+                    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+                    const blob = Array.isArray(result) ? result[0] : result;
+                    file = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+                    statusDiv.style.display = 'none';
+                } catch (e) {
+                    console.error("HEIC conversion failed", e);
+                    alert("Could not convert HEIC. Please convert to JPG/PNG manually.");
+                    return;
+                }
+            }
+
+            // --- Show Cropper Modal ---
+            // 1. Create Modal if not exists
+            if (!document.getElementById('cropper-modal')) {
+                const modal = document.createElement('div');
+                modal.id = 'cropper-modal';
+                Object.assign(modal.style, {
+                    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+                    background: 'rgba(0,0,0,0.85)', display: 'none', justifyContent: 'center', alignItems: 'center', zIndex: '10000'
+                });
+                modal.innerHTML = `
+                    <div style="background: white; padding: 24px; border-radius: 12px; width: 500px; max-width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
+                        <h3 style="margin-top: 0; margin-bottom: 16px;">Adjust Profile Picture</h3>
+                        <div style="flex: 1; min-height: 300px; max-height: 500px; background: #f0f0f0; overflow: hidden; position: relative;">
+                            <img id="cropper-img" style="max-width: 100%; display: block;">
+                        </div>
+                        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+                            <button id="cancel-crop" class="btn btn-outline">Cancel</button>
+                            <button id="save-crop" class="btn btn-primary">Save Picture</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+
+                // Cancel Handler
+                document.getElementById('cancel-crop').onclick = () => {
+                    document.getElementById('cropper-modal').style.display = 'none';
+                    if (window.cropper) window.cropper.destroy();
+                    fileInput.value = ''; // Reset input
+                };
+            }
+
+            // 2. Open Modal with Image
+            const modal = document.getElementById('cropper-modal');
+            const img = document.getElementById('cropper-img');
+            modal.style.display = 'flex';
+
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                // Ensure image is loaded before creating cropper
+                img.onload = () => {
+                    if (window.cropper) window.cropper.destroy();
+                    window.cropper = new Cropper(img, {
+                        aspectRatio: 1,
+                        viewMode: 1,
+                        dragMode: 'move',
+                        autoCropArea: 1,
+                        restore: false,
+                        guides: true,
+                        center: true,
+                        highlight: false,
+                        cropBoxMovable: false,
+                        cropBoxResizable: false,
+                        toggleDragModeOnDblclick: false,
+                        ready() {
+                            // Extra check to ensure layout is updated
+                            this.cropper.crop();
+                        }
+                    });
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+
+            // 3. Handle Save
+            document.getElementById('save-crop').onclick = async () => {
+                if (!window.cropper) return;
+
+                const btn = document.getElementById('save-crop');
+                const origText = btn.textContent;
+                btn.textContent = 'Saving...';
+                btn.disabled = true;
+
+                window.cropper.getCroppedCanvas({
+                    width: 400,
+                    height: 400,
+                    imageSmoothingQuality: 'high'
+                }).toBlob(async (blob) => {
+                    try {
+                        const fileExt = file.name.split('.').pop() || 'jpg';
+                        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+
+                        // Upload
+                        const { error: uploadError } = await supabase.storage
+                            .from('avatars')
+                            .upload(fileName, blob, { contentType: file.type, upsert: true });
+
+                        if (uploadError) throw uploadError;
+
+                        const { data: { publicUrl } } = supabase.storage
+                            .from('avatars')
+                            .getPublicUrl(fileName);
+
+                        // Update UI & Database
+                        previewImg.src = publicUrl;
+                        hiddenInput.value = publicUrl;
+
+                        // Update Profile in DB immediately
+                        await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+
+                        statusDiv.style.display = 'block';
+                        statusDiv.textContent = 'Upload complete!';
+                        statusDiv.style.color = '#10B981';
+
+                        modal.style.display = 'none';
+                        if (window.cropper) window.cropper.destroy();
+
+                        // Show Success Toast
+                        const toast = document.createElement('div');
+                        toast.textContent = 'Profile picture updated successfully!';
+                        Object.assign(toast.style, {
+                            position: 'fixed', bottom: '24px', right: '24px', padding: '12px 24px',
+                            background: '#10B981', color: 'white', borderRadius: '8px', zIndex: '10001', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                        });
+                        document.body.appendChild(toast);
+                        setTimeout(() => toast.remove(), 3000);
+
+                    } catch (err) {
+                        console.error(err);
+                        alert('Error uploading image: ' + err.message);
+                        statusDiv.textContent = 'Upload failed.';
+                        statusDiv.style.color = 'red';
+                    } finally {
+                        btn.textContent = origText;
+                        btn.disabled = false;
+                    }
+                }, file.type);
+            };
+        };
+
+        // --- Video Upload Logic ---
+        const vDropZone = document.getElementById('video-drop-zone');
+        const vFileInput = document.getElementById('video-file-input');
+        const vStatusDiv = document.getElementById('video-upload-status');
+        const vFileName = document.getElementById('video-filename');
+        const vHiddenInput = document.getElementById('prof-video');
+
+        vDropZone.addEventListener('click', () => vFileInput.click());
+        vFileInput.addEventListener('change', async () => {
+            if (vFileInput.files.length === 0) return;
+            const file = vFileInput.files[0];
+
+            vStatusDiv.style.display = 'block';
+            vStatusDiv.textContent = 'Uploading Video...';
+            vStatusDiv.style.color = '#666';
 
             try {
                 const fileExt = file.name.split('.').pop();
-                const fileName = `${user.id} -${Date.now()}.${fileExt} `;
-                const filePath = `${fileName} `;
+                const fileName = `video-${user.id}-${Date.now()}.${fileExt}`;
 
+                // Using 'videos' bucket
                 const { error: uploadError } = await supabase.storage
-                    .from('avatars')
-                    .upload(filePath, file);
+                    .from('videos')
+                    .upload(fileName, file);
 
                 if (uploadError) throw uploadError;
 
                 const { data: { publicUrl } } = supabase.storage
-                    .from('avatars')
-                    .getPublicUrl(filePath);
+                    .from('videos')
+                    .getPublicUrl(fileName);
 
-                // Success
-                statusDiv.textContent = 'Upload complete!';
-                statusDiv.style.color = 'green';
-
-                // Update Preview & Hidden Input
-                previewImg.src = publicUrl;
-                hiddenInput.value = publicUrl;
+                vStatusDiv.textContent = 'Video Upload complete!';
+                vStatusDiv.style.color = 'green';
+                vFileName.textContent = file.name;
+                vHiddenInput.value = publicUrl;
 
             } catch (error) {
-                console.error('Upload Error:', error);
-                statusDiv.textContent = 'Upload failed: ' + error.message;
-                statusDiv.style.color = 'red';
+                console.error('Video Upload Error:', error);
+                vStatusDiv.textContent = 'Upload failed: ' + error.message;
+                vStatusDiv.style.color = 'red';
             }
-        };
+        });
 
 
         const form = document.getElementById('profile-form');
@@ -780,7 +1095,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 instagram: document.getElementById('prof-instagram').value || null,
                 facebook: document.getElementById('prof-facebook').value || null,
                 linkedin: document.getElementById('prof-linkedin').value || null,
-                updated_at: new Date().toISOString()
+                updated_at: new Date().toISOString(),
+                introduction_video_url: document.getElementById('prof-video').value || null,
+                highlights: [{ title: 'Highlights', desc: document.getElementById('prof-highlights').value || '' }]
             };
 
             const { error: baseError } = await supabase
@@ -1069,15 +1386,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const convIdParam = urlParams.get('convId');
 
     if (tabParam) {
-        const tabBtn = document.querySelector(`.tab - btn[data - tab="${tabParam}"]`);
+        const tabBtn = document.querySelector(`.tab-btn[data-tab="${tabParam}"]`);
         if (tabBtn) {
             tabBtn.click();
-            // If messages tab and convId present, load chat
-            if (tabParam === 'messages' && convIdParam) {
-                // Wait for loadConversations to likely finish or poll? 
-                // Simple approach: call loadChat directly after a small delay or modifying loadConversations to handle default
-                setTimeout(() => loadChat(convIdParam), 500);
-            }
+            // If messages tab and convId present, loadConversations (called by click) will handle opening it via convIdParam
         }
     } else {
         // Default to first tab (often Bookings/Upcoming) if no param

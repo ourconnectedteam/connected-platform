@@ -171,6 +171,50 @@
         }
     });
 
+    // Toast Notification Function
+    const showToast = (message) => {
+        const toast = document.createElement('div');
+        toast.style.cssText = `
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #111;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 10001;
+            opacity: 0;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        `;
+        toast.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            ${message}
+        `;
+        document.body.appendChild(toast);
+
+        // Animate In
+        requestAnimationFrame(() => {
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+        });
+
+        // Remove after 3s
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(-10px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    };
+
     // Handle Signup
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -191,25 +235,26 @@
             msg.textContent = error.message;
             msg.classList.remove('hidden');
         } else {
-            msg.style.color = 'green';
+            msg.classList.add('hidden'); // Hide any previous messages
 
             // Check if session exists (Auto-login was successful)
             if (data.session) {
-                msg.textContent = 'Account created! Redirecting...';
-                msg.classList.remove('hidden');
-                window.location.href = '/onboarding.html';
+                showToast('Account Successfully Created!');
+                setTimeout(() => {
+                    window.location.href = '/onboarding.html';
+                }, 1500); // Wait a bit for toast to be seen
             } else {
                 // No session (maybe email confirm required?), try forceful login just in case
                 // Sometimes Supabase returns user but no session depending on config
                 const { data: loginData, error: loginError } = await auth.signIn(email, password);
                 if (loginData.session) {
-                    msg.textContent = 'Account created! Redirecting...';
-                    msg.classList.remove('hidden');
-                    window.location.href = '/onboarding.html';
+                    showToast('Account Successfully Created!');
+                    setTimeout(() => {
+                        window.location.href = '/onboarding.html';
+                    }, 1500);
                 } else {
                     // Truly requires email confirmation
-                    msg.textContent = 'Account created! Please check your email to confirm.';
-                    msg.classList.remove('hidden');
+                    showToast('Account created! Please check your email.');
                 }
             }
         }

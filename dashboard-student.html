@@ -9,6 +9,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script type="module" src="/src/main.js"></script>
     <script type="module" src="/src/dashboard.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://unpkg.com/heic2any/dist/heic2any.min.js"></script>
     <style>
         .dashboard-container {
             max-width: 1200px;
@@ -110,6 +113,7 @@
             <button class="tab-btn active" data-tab="bookings">My Bookings</button>
             <button class="tab-btn" data-tab="messages">Messages</button>
             <button class="tab-btn" data-tab="connections">Connections</button>
+            <button class="tab-btn" data-tab="saved">Saved Users</button>
             <button class="tab-btn" data-tab="profile">Profile</button>
         </div>
 
@@ -127,6 +131,11 @@
         <div id="tab-connections" class="tab-content">
             <h3>My Study Buddies</h3>
             <div id="connections-list">Loading...</div>
+        </div>
+
+        <div id="tab-saved" class="tab-content">
+
+            <div id="saved-list">Loading...</div>
         </div>
 
         <div id="tab-profile" class="tab-content">
