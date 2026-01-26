@@ -97,13 +97,22 @@ export const messaging = {
 
         // 2. Create new conversation
         // Pass creator_id explicitly (trigger will also set it, but this satisfies the policy check)
+        console.log('[DEBUG] Creating conversation with creator_id:', currentUserId);
+        console.log('[DEBUG] Target user ID:', otherUserId);
+
         const { data: conv, error } = await supabase.from('conversations').insert({
             creator_id: currentUserId
         }).select().single();
+
         if (error) {
-            console.error("Error creating conversation:", error);
+            console.error("❌ Error creating conversation:", error);
+            console.error("❌ Error code:", error.code);
+            console.error("❌ Error message:", error.message);
+            console.error("❌ Error details:", JSON.stringify(error, null, 2));
             return { error };
         }
+
+        console.log('✅ Conversation created successfully:', conv);
 
         // 3. Add creator as member (allowed by RLS: creator can self-join)
         const { error: creatorError } = await supabase.from('conversation_members').insert({
