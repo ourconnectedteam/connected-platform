@@ -181,6 +181,17 @@ export const messaging = {
         return { error };
     },
 
+    // Delete Conversation for current user (remove their membership)
+    async deleteConversation(conversationId, userId) {
+        const { error } = await supabase
+            .from('conversation_members')
+            .delete()
+            .eq('conversation_id', conversationId)
+            .eq('user_id', userId);
+
+        return { error };
+    },
+
     // Get Total Unread Count
     async getUnreadCount(userId) {
         // Step 1: Get my conversations

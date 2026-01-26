@@ -346,6 +346,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                     <div class="chat-item-name">${c.otherUser?.full_name || 'Unknown'}</div>
                                     <div class="chat-item-preview">${c.lastMessage?.body || 'No messages yet'}</div>
                                 </div>
+                                <button class="chat-delete-btn" onclick="deleteChat(event, '${c.id}')" title="Delete chat">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                                 <!-- Badge Notification Placeholder -->
                                 <div id="badge-${c.id}" class="badge-dot" style="display: none;"></div>
                             </div>
@@ -461,6 +464,68 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (e.key === 'Enter') handleSend();
         });
     }
+
+    // Delete Chat Modal
+    window.deleteChat = (event, conversationId) => {
+        event.stopPropagation(); // Prevent chat from opening
+
+        const modal = document.createElement('div');
+        Object.assign(modal.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center',
+            alignItems: 'center', zIndex: '9999', backdropFilter: 'blur(4px)'
+        });
+
+        modal.innerHTML = `
+            <div style="background: white; padding: 32px; border-radius: 16px; width: 400px; max-width: 90%; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); text-align: center;">
+                <div style="background: #fee2e2; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+                    <i class="fas fa-trash-alt" style="color: #ef4444; font-size: 1.2rem;"></i>
+                </div>
+                <h3 style="margin-top: 0; margin-bottom: 8px; color: #111827; font-size: 1.25rem; font-weight: 600;">Delete Conversation?</h3>
+                <p style="color: #6b7280; font-size: 0.95rem; margin-bottom: 24px; line-height: 1.5;">
+                    This will remove the chat from your messages. The conversation will still exist for the other person.
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                    <button id="cancel-delete-chat" class="btn" style="background: white; border: 1px solid #d1d5db; color: #374151; padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer;">Cancel</button>
+                    <button id="confirm-delete-chat" class="btn" style="background: #ef4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 500; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);">Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Animate in
+        const card = modal.firstElementChild;
+        card.style.transform = 'scale(0.95)';
+        card.style.opacity = '0';
+        card.style.transition = 'all 0.2s ease-out';
+        requestAnimationFrame(() => {
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+        });
+
+        document.getElementById('cancel-delete-chat').onclick = () => {
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0';
+            setTimeout(() => modal.remove(), 200);
+        };
+
+        document.getElementById('confirm-delete-chat').onclick = async () => {
+            const btn = document.getElementById('confirm-delete-chat');
+            btn.textContent = 'Deleting...';
+            btn.disabled = true;
+
+            const { data: { user } } = await supabase.auth.getUser();
+            await messaging.deleteConversation(conversationId, user.id);
+
+            card.style.transform = 'scale(0.95)';
+            card.style.opacity = '0';
+            setTimeout(() => {
+                modal.remove();
+                loadConversations(); // Refresh the conversation list
+            }, 200);
+        };
+    };
+
 
     async function loadConnections() {
         const list = document.getElementById('connections-list');

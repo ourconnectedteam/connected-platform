@@ -2274,6 +2274,41 @@ footer {
     text-overflow: ellipsis !important;
 }
 
+.chat-delete-btn {
+    opacity: 0;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    color: #9ca3af;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.chat-item:hover .chat-delete-btn {
+    opacity: 1;
+}
+
+.chat-delete-btn:hover {
+    background: #fee2e2;
+    color: #ef4444;
+    transform: scale(1.1);
+}
+
+.chat-delete-btn:active {
+    transform: scale(0.95);
+}
+
+.chat-delete-btn i {
+    font-size: 0.9rem;
+}
+
+
 .chat-header {
     padding: 16px 24px !important;
     border-bottom: 1px solid var(--border-color) !important;
