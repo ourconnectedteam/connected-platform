@@ -2288,6 +2288,8 @@ footer {
     justify-content: center;
     margin-left: auto;
     flex-shrink: 0;
+    width: 32px;
+    height: 32px;
 }
 
 .chat-item:hover .chat-delete-btn {
@@ -2304,8 +2306,10 @@ footer {
     transform: scale(0.95);
 }
 
-.chat-delete-btn i {
-    font-size: 0.9rem;
+.chat-delete-btn svg {
+    width: 16px;
+    height: 16px;
+    display: block;
 }
 
 
@@ -2703,9 +2707,11 @@ footer {
     width: 20px;
     height: 20px;
 }
+
 /* Search Dropdown */
 .hero-search-wrapper {
-    position: relative; /* Ensure absolute dropdown is relative to this */
+    position: relative;
+    /* Ensure absolute dropdown is relative to this */
 }
 
 .search-results-dropdown {
@@ -2721,8 +2727,9 @@ footer {
     overflow: hidden;
     max-height: 300px;
     overflow-y: auto;
-    border: 1px solid rgba(0,0,0,0.05);
-    display: none; /* Hidden by default */
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    display: none;
+    /* Hidden by default */
 }
 
 .search-result-item {
