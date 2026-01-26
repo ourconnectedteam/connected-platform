@@ -616,6 +616,15 @@
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-container').style.display = 'grid'; // Layout trigger
 
+            // VERSION CHECK - If you don't see this in the console, you have old code
+            console.log('%c STOP! SYSTEM VERSION: v2.5 (Fix Applied)', 'background: red; color: white; font-size: 20px');
+
+            // Add visible version badge
+            const versionBadge = document.createElement('div');
+            versionBadge.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 5px; font-family: monospace; z-index: 9999; font-size: 12px; pointer-events: none; opacity: 0.7;';
+            versionBadge.textContent = 'System Status: v2.5 (Fix Active)';
+            document.body.appendChild(versionBadge);
+
             // Basic Info
             const avatar = user.avatar_url || `/assets/${user.role}.png`;
             document.getElementById('p-name').textContent = user.full_name;
