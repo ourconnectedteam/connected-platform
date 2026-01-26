@@ -617,12 +617,12 @@
             document.getElementById('profile-container').style.display = 'grid'; // Layout trigger
 
             // VERSION CHECK - If you don't see this in the console, you have old code
-            console.log('%c STOP! SYSTEM VERSION: v2.5 (Fix Applied)', 'background: red; color: white; font-size: 20px');
+            console.log('%c STOP! SYSTEM VERSION: v2.6 (Build Fix Applied)', 'background: green; color: white; font-size: 20px');
 
             // Add visible version badge
             const versionBadge = document.createElement('div');
-            versionBadge.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #000; color: #0f0; padding: 5px 10px; border-radius: 5px; font-family: monospace; z-index: 9999; font-size: 12px; pointer-events: none; opacity: 0.7;';
-            versionBadge.textContent = 'System Status: v2.5 (Fix Active)';
+            versionBadge.style.cssText = 'position: fixed; bottom: 10px; right: 10px; background: #006400; color: #fff; padding: 5px 10px; border-radius: 5px; font-family: monospace; z-index: 9999; font-size: 12px; pointer-events: none; opacity: 0.9; box-shadow: 0 2px 5px rgba(0,0,0,0.5);';
+            versionBadge.textContent = 'System Status: v2.6 (Live)';
             document.body.appendChild(versionBadge);
 
             // Basic Info
