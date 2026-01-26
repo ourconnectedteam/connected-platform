@@ -13,10 +13,10 @@
   "description": "",
   "dependencies": {
     "@stripe/stripe-js": "^8.6.1",
-    "@supabase/supabase-js": "^2.90.1"
+    "@supabase/supabase-js": "^2.90.1",
+    "vite": "^5.0.0"
   },
   "devDependencies": {
-    "vite": "^5.0.0",
     "dotenv": "^17.2.3"
   }
 }
