@@ -66,4 +66,42 @@ export const connections = {
             .eq('id', requestId);
         return { success: true };
     },
+
+    // Get Connection Status between current user and target user
+    async getConnectionStatus(currentUserId, targetUserId) {
+        if (!currentUserId || !targetUserId) return 'none';
+        if (currentUserId === targetUserId) return 'self';
+
+        // Check if already connected
+        const { data: conn } = await supabase
+            .from('connections')
+            .select('id')
+            .or(`and(user_a.eq.${currentUserId},user_b.eq.${targetUserId}),and(user_a.eq.${targetUserId},user_b.eq.${currentUserId})`)
+            .single();
+
+        if (conn) return 'connected';
+
+        // Check pending requests
+        const { data: outgoing } = await supabase
+            .from('connection_requests')
+            .select('id')
+            .eq('requester_id', currentUserId)
+            .eq('receiver_id', targetUserId)
+            .eq('status', 'pending')
+            .maybeSingle();
+
+        if (outgoing) return 'outgoing_pending';
+
+        const { data: incoming } = await supabase
+            .from('connection_requests')
+            .select('id, requester_id, receiver_id')
+            .eq('requester_id', targetUserId)
+            .eq('receiver_id', currentUserId)
+            .eq('status', 'pending')
+            .maybeSingle();
+
+        if (incoming) return { status: 'incoming_pending', requestId: incoming.id };
+
+        return 'none';
+    },
 };

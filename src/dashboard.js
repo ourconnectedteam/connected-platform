@@ -392,8 +392,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div class="chat-sidebar-header">Messages</div>
                     <div class="chat-list">
                         ${conversations
-                            .map(
-                                c => `
+                .map(
+                    c => `
                             <div class="chat-item" data-id="${c.id}">
                                 <img src="${c.otherUser?.avatar_url || 'https://placehold.co/48'}" class="chat-item-avatar" alt="Avatar">
                                 <div class="chat-item-info">
@@ -412,8 +412,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <div id="badge-${c.id}" class="badge-dot" style="display: none;"></div>
                             </div>
                         `
-                            )
-                            .join('')}
+                )
+                .join('')}
                     </div>
                 </div>
                 <div id="chat-messages" class="chat-main">
@@ -499,16 +499,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             </div>
             <div class="msg-list" id="msg-scroll-area">
                 ${msgs
-                    .map(
-                        m => `
+                .map(
+                    m => `
                     <div class="msg-bubble ${m.sender_id === user.id ? 'msg-sent' : 'msg-received'}">
                         ${m.body}
                         <!-- Hover time is handled by CSS now -->
                         <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
                 `
-                    )
-                    .join('')}
+                )
+                .join('')}
             </div>
             <div class="chat-input-area">
                 <input type="text" id="msg-input" class="chat-input" placeholder="Type a message...">
@@ -612,19 +612,134 @@ document.addEventListener('DOMContentLoaded', async () => {
     async function loadConnections() {
         const list = document.getElementById('connections-list');
         if (!list) return;
+        list.innerHTML = '<p style="text-align:center; color:#666;">Loading connections...</p>';
 
         const {
             data: { user },
         } = await supabase.auth.getUser();
+
+        // 1. Get Pending Incoming Requests
+        const { data: requests } = await connections.getRequests(user.id);
+
+        // 2. Get Confirmed Connections
         const { data: conns } = await connections.getConnections(user.id);
 
-        if (!conns || conns.length === 0) {
-            list.innerHTML = '<p>No confirmed connections.</p>';
-        } else {
-            list.innerHTML = conns
-                .map(p => `<div class="profile-card-mini">${p.full_name}</div>`)
-                .join('');
+        let html = '';
+
+        // Show Pending Requests Section
+        if (requests && requests.length > 0) {
+            html += `
+                <div style="margin-bottom: 32px;">
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 16px; color: #111;">Pending Requests</h3>
+                    ${requests.map(req => {
+                const requester = req.profiles;
+                return `
+                            <div style="display: flex; align-items: center; justify-content: space-between; padding: 16px; background: white; border: 1px solid #E5E7EB; border-radius: 12px; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <img src="${requester.avatar_url || 'https://placehold.co/60'}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
+                                    <div>
+                                        <div style="font-weight: 600; font-size: 1rem; color: #111;">${requester.full_name}</div>
+                                        <div style="font-size: 0.9rem; color: #6B7280;">Student</div>
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 8px;">
+                                    <button class="btn btn-outline btn-sm" onclick="declineConnection('${req.id}')">Decline</button>
+                                    <button class="btn btn-primary btn-sm" onclick="acceptConnection('${req.id}')">Accept</button>
+                                </div>
+                            </div>
+                        `;
+            }).join('')}
+                </div>
+            `;
         }
+
+        // Show Confirmed Connections
+        if (!conns || conns.length === 0) {
+            if (!requests || requests.length === 0) {
+                html = `
+                    <div style="text-align: center; padding: 60px 20px; color: #888;">
+                        <div style="font-size: 3rem; margin-bottom: 16px; opacity: 0.5;">🤝</div>
+                        <p style="font-size: 1.1rem; margin-bottom: 12px; font-weight: 500;">No connections yet.</p>
+                        <p style="font-size: 0.9rem;">Connect with other students to build your study network!</p>
+                        <div style="margin-top: 24px;">
+                            <a href="/buddies.html" class="btn btn-primary">Find Study Buddies</a>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += '<p style="text-align: center; color: #666; padding: 20px;">No confirmed connections yet.</p>';
+            }
+        } else {
+            // Fetch full profile details for connections
+            const ids = conns.map(c => c.id);
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('*, student_profiles(*)')
+                .in('id', ids);
+
+            if (!profiles) {
+                html += '<p>Error loading profiles.</p>';
+                list.innerHTML = html;
+                return;
+            }
+
+            // Reuse the same card layout as Saved Users
+            html += profiles.map(p => {
+                const details = p.student_profiles?.[0] || {};
+                const subTextStr = details.ib_status || 'Student';
+                const bioSnippet = p.bio || 'Connected student';
+
+                return `
+            <div class="saved-user-card" style="display: flex; gap: 24px; padding: 24px; border: 1px solid #E5E7EB; border-radius: 16px; background: white; margin-bottom: 20px; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s;">
+                <div style="flex-shrink: 0; position: relative;">
+                    <img src="${p.avatar_url || 'https://placehold.co/150'}" style="width: 120px; height: 120px; border-radius: 12px; object-fit: cover; border: 1px solid #F3F4F6;">
+                </div>
+
+                <div style="flex: 1; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 2px;">
+                    <h3 style="margin: 0 0 6px 0; font-size: 1.25rem; font-weight: 700; color: #111; letter-spacing: -0.01em;">
+                        ${p.full_name}
+                        ${p.verified ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="#3B82F6" style="vertical-align: middle; margin-left: 6px;"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>' : ''}
+                    </h3>
+                    
+                    <div style="color: #6B7280; font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <span>${subTextStr}</span>
+                        <span style="color: #E5E7EB;">|</span>
+                        <span>🇺🇸 United States</span>
+                    </div>
+
+                    <div style="flex: 1;">
+                        <p style="color: #4B5563; font-size: 0.95rem; line-height: 1.5; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                            ${bioSnippet}
+                        </p>
+                        <a href="/profile.html?id=${p.id}" style="color: #007AFF; font-weight: 600; text-decoration: none; font-size: 0.9rem; margin-top: 6px; display: inline-block;">View Profile</a>
+                    </div>
+                </div>
+
+                <div style="width: 180px; padding-left: 24px; border-left: 1px solid #F3F4F6; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                        <button class="btn btn-primary btn-sm" style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;" onclick="window.location.href='/dashboard-student.html?tab=messages&create_conv=${p.id}'">
+                            Message
+                        </button>
+                        
+                        <a href="/profile.html?id=${p.id}" class="btn btn-outline btn-sm" style="display: flex; align-items: center; justify-content: center; width: 100%; box-sizing: border-box;">View Profile</a>
+                    </div>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        list.innerHTML = html;
+
+        // Add handlers for accept/decline
+        window.acceptConnection = async (requestId) => {
+            await connections.acceptRequest(requestId);
+            loadConnections(); // Refresh
+        };
+
+        window.declineConnection = async (requestId) => {
+            await connections.declineRequest(requestId);
+            loadConnections(); // Refresh
+        };
     }
 
     async function loadRequests() {
@@ -992,15 +1107,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                      <div class="profile-section-title" style="margin-top: 24px;">Highlights</div>
                     <div class="form-group">
                          <label>About your Highlights</label>
-                         <textarea id="prof-highlights" class="form-textarea" rows="4" placeholder="Share a brief phrase about your strengths or what makes you unique...">${
-                             profile.highlights &&
-                             Array.isArray(profile.highlights) &&
-                             profile.highlights.length > 0
-                                 ? profile.highlights[0].desc ||
-                                   profile.highlights[0].description ||
-                                   ''
-                                 : ''
-                         }</textarea>
+                         <textarea id="prof-highlights" class="form-textarea" rows="4" placeholder="Share a brief phrase about your strengths or what makes you unique...">${profile.highlights &&
+                Array.isArray(profile.highlights) &&
+                profile.highlights.length > 0
+                ? profile.highlights[0].desc ||
+                profile.highlights[0].description ||
+                ''
+                : ''
+            }</textarea>
                          <p style="font-size: 0.8rem; color: #666; margin-top: 4px;">This will be displayed on your profile.</p>
                     </div>
 

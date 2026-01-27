@@ -1,5 +1,6 @@
 import { supabase } from './lib/supabase.js';
 import { logger } from './lib/logger.js';
+import { connections } from './lib/connections.js';
 
 export async function renderBrowsingPage(type) {
     const grid = document.querySelector('.profiles-grid');
@@ -149,7 +150,7 @@ function createCard(type, details, user) {
         subtext = details.ib_status || 'Student';
         priceInfo = ''; // No price for students
         actionBtn = `
-            <button class="btn btn-primary btn-sm btn-wide" onclick="sendConnectionRequest('${user.id}')">Connect</button>
+            <button class="btn btn-primary btn-sm btn-wide" id="conn-btn-${user.id}" onclick="handleConnectionAction('${user.id}')" disabled>Loading...</button>
             <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
             <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     }
@@ -202,6 +203,11 @@ function createCard(type, details, user) {
         const el = card.querySelector(`#conn-${user.id} span`);
         if (el) el.textContent = `${count > 500 ? '500+' : count} Connections`;
     });
+
+    // For student cards, fetch connection status
+    if (user.role === 'student') {
+        updateConnectionButton(user.id);
+    }
 
     return card;
 }
@@ -338,5 +344,73 @@ window.startChat = async receiverId => {
         if (profile.role === 'counselor') dashPath = '/counselor-dashboard.html';
 
         window.location.href = `${dashPath}?tab=messages&convId=${data.id}`;
+    }
+};
+
+// Update connection button based on current status
+async function updateConnectionButton(targetUserId) {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const btn = document.getElementById(`conn-btn-${targetUserId}`);
+    if (!btn) return;
+
+    const status = await connections.getConnectionStatus(user.id, targetUserId);
+
+    if (status === 'connected') {
+        btn.textContent = 'Connected';
+        btn.disabled = true;
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    } else if (status === 'outgoing_pending') {
+        btn.textContent = 'Requested';
+        btn.disabled = true;
+        btn.classList.remove('btn-primary');
+        btn.classList.add('btn-outline');
+    } else if (status?.status === 'incoming_pending') {
+        btn.textContent = 'Accept';
+        btn.disabled = false;
+        btn.dataset.requestId = status.requestId;
+    } else {
+        btn.textContent = 'Connect';
+        btn.disabled = false;
+    }
+}
+
+// Handle connection button click
+window.handleConnectionAction = async (targetUserId) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        showToast('Authentication Required', 'Please log in to connect.', 'error');
+        return;
+    }
+
+    const btn = document.getElementById(`conn-btn-${targetUserId}`);
+    if (!btn) return;
+
+    const status = await connections.getConnectionStatus(user.id, targetUserId);
+
+    if (status?.status === 'incoming_pending') {
+        // Accept request
+        await connections.acceptRequest(status.requestId);
+        showToast('Connection Accepted', 'You are now connected!', 'success');
+        updateConnectionButton(targetUserId);
+    } else if (status === 'none') {
+        // Send new request
+        const { error } = await supabase.from('connection_requests').insert({
+            requester_id: user.id,
+            receiver_id: targetUserId,
+        });
+
+        if (error) {
+            if (error.code === '23505') {
+                showToast('Request Pending', 'You already sent a connection request.', 'info');
+            } else {
+                showToast('Error', error.message, 'error');
+            }
+        } else {
+            showToast('Invite Sent', 'They will get a notification shortly.', 'success');
+            updateConnectionButton(targetUserId);
+        }
     }
 };

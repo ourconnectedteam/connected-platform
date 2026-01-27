@@ -795,13 +795,15 @@
                 `;
             } else {
                 btnHtml += `
-                     <button class="btn-book-xl" onclick="window.sendConnectionRequest('${user.id}')" style="background: var(--accent-blue);">
-                        Connect
+                     <button class="btn-book-xl" id="profile-conn-btn" onclick="profileHandleConnection()" disabled style="background: var(--accent-blue);">
+                        Loading...
                     </button>
                     <button class="btn-message-outline" onclick="startChat('${user.id}')">
                         Message
                     </button>
                 `;
+                // Update connection button status async
+                updateProfileConnectionButton(user.id);
             }
             actionsEl.innerHTML = btnHtml;
 
@@ -890,10 +892,69 @@
             }
         };
 
-        window.sendConnectionRequest = async (id) => {
+        let currentTargetUserId = null;
+
+        async function updateProfileConnectionButton(targetUserId) {
+            currentTargetUserId = targetUserId;
+            const session = await supabase.auth.getSession();
+            if (!session.data.session) return;
+
+            const currentUserId = session.data.session.user.id;
+            const btn = document.getElementById('profile-conn-btn');
+            if (!btn) return;
+
+            // Import connections module
+            const { connections } = await import('./src/lib/connections.js');
+            const status = await connections.getConnectionStatus(currentUserId, targetUserId);
+
+            if (status === 'connected') {
+                btn.textContent = 'Connected';
+                btn.disabled = true;
+                btn.style.background = '#6B7280';
+            } else if (status === 'outgoing_pending') {
+                btn.textContent = 'Requested';
+                btn.disabled = true;
+                btn.style.background = '#6B7280';
+            } else if (status?.status === 'incoming_pending') {
+                btn.textContent = 'Accept Request';
+                btn.disabled = false;
+                btn.dataset.requestId = status.requestId;
+                btn.style.background = 'var(--accent-blue)';
+            } else {
+                btn.textContent = 'Connect';
+                btn.disabled = false;
+                btn.style.background = 'var(--accent-blue)';
+            }
+        }
+
+        window.profileHandleConnection = async function () {
             const session = await supabase.auth.getSession();
             if (!session.data.session) return window.location.href = '/src/auth.html#login';
-            alert('Request sent!');
+
+            const currentUserId = session.data.session.user.id;
+            const btn = document.getElementById('profile-conn-btn');
+            if (!btn || !currentTargetUserId) return;
+
+            const { connections } = await import('./src/lib/connections.js');
+            const status = await connections.getConnectionStatus(currentUserId, currentTargetUserId);
+
+            if (status?.status === 'incoming_pending') {
+                await connections.acceptRequest(status.requestId);
+                alert('Connection accepted!');
+                updateProfileConnectionButton(currentTargetUserId);
+            } else if (status === 'none') {
+                const { error } = await supabase.from('connection_requests').insert({
+                    requester_id: currentUserId,
+                    receiver_id: currentTargetUserId,
+                });
+
+                if (error) {
+                    alert(error.code === '23505' ? 'Request already sent!' : 'Error sending request');
+                } else {
+                    alert('Request sent!');
+                    updateProfileConnectionButton(currentTargetUserId);
+                }
+            }
         };
 
         // --- Share Modal Logic ---
