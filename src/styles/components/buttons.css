@@ -1,0 +1,128 @@
+/* Button Components */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 20px;
+    border-radius: 100px;
+    font-weight: 500;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all var(--timing-base) var(--easing-smooth);
+    text-decoration: none;
+    position: relative;
+    min-height: 44px;
+    /* Phase 2: Touch-friendly target size */
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.btn:focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 4px;
+}
+
+.btn-sm {
+    padding: 6px 16px;
+    font-size: 0.85rem;
+    min-height: 36px;
+}
+
+/* Primary "Liquid Dark" Button */
+.btn-primary {
+    background: linear-gradient(135deg, rgba(20, 20, 20, 0.9) 0%, rgba(0, 0, 0, 1) 100%);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Phase 2: Hover only on devices that support it (no sticky hover on touch) */
+@media (hover: hover) {
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow:
+            0 6px 20px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        background: linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(10, 10, 10, 1) 100%);
+    }
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+    opacity: 0.9;
+}
+
+/* Secondary "Liquid Light" Button */
+.btn-secondary,
+.btn-secondary.btn-white {
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--text-primary);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+@media (hover: hover) {
+
+    .btn-secondary:hover,
+    .btn-secondary.btn-white:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-1px);
+        box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
+}
+
+.btn-secondary:active {
+    transform: translateY(0);
+    opacity: 0.9;
+}
+
+.btn-outline {
+    background: transparent;
+    color: #0281c5;
+    border: 1px solid #0281c5;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+}
+
+@media (hover: hover) {
+    .btn-outline:hover {
+        background: #f0f9ff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.btn-outline:active {
+    transform: translateY(0);
+}
+
+/* Button widths */
+.btn-wide {
+    min-width: 120px;
+}
+
+.btn-full {
+    width: 100%;
+}
+
+.btn-text {
+    background: transparent;
+    border: none;
+    padding: var(--space-3) var(--space-4);
+    color: var(--accent-blue);
+    font-weight: 500;
+}
+
+@media (hover: hover) {
+    .btn-text:hover {
+        background: rgba(0, 122, 255, 0.05);
+    }
+}

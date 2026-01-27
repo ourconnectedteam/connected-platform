@@ -143,6 +143,8 @@ body::before {
     align-items: center;
     justify-content: center;
     padding: 10px 20px;
+    min-height: 44px;
+    /* Phase 2: Touch-friendly target size (iOS HIG) */
     border-radius: 100px;
     font-weight: 500;
     font-size: 1rem;
@@ -164,6 +166,8 @@ body::before {
 .btn-sm {
     padding: 6px 16px;
     font-size: 0.85rem;
+    min-height: 36px;
+    /* Smaller but still tappable */
 }
 
 /* Primary "Liquid Dark" Button */
@@ -176,17 +180,22 @@ body::before {
         inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
-.btn-primary:hover {
-    transform: translateY(-1px);
-    /* FIXED: Subtle lift instead of janky scale */
-    box-shadow:
-        0 6px 20px rgba(0, 0, 0, 0.35),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    background: linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(10, 10, 10, 1) 100%);
+/* Phase 2: Only apply hover on devices that support it (prevents sticky hover on touch) */
+@media (hover: hover) {
+    .btn-primary:hover {
+        transform: translateY(-1px);
+        /* FIXED: Subtle lift instead of janky scale */
+        box-shadow:
+            0 6px 20px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        background: linear-gradient(135deg, rgba(40, 40, 40, 0.95) 0%, rgba(10, 10, 10, 1) 100%);
+    }
 }
 
 .btn-primary:active {
     transform: translateY(0);
+    opacity: 0.9;
+    /* Touch feedback */
 }
 
 /* Secondary "Liquid Light" Button */
@@ -200,19 +209,24 @@ body::before {
         inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.btn-secondary:hover,
-.btn-secondary.btn-white:hover {
-    background: rgba(255, 255, 255, 0.9);
-    transform: translateY(-1px);
-    /* FIXED: Subtle lift instead of scale */
-    box-shadow:
-        0 8px 20px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    border-color: rgba(0, 0, 0, 0.1);
+@media (hover: hover) {
+
+    .btn-secondary:hover,
+    .btn-secondary.btn-white:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateY(-1px);
+        /* FIXED: Subtle lift instead of scale */
+        box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.08),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+        border-color: rgba(0, 0, 0, 0.1);
+    }
 }
 
 .btn-secondary:active {
     transform: translateY(0);
+    opacity: 0.9;
+    /* Touch feedback */
 }
 
 .btn-outline {
@@ -222,10 +236,18 @@ body::before {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
 }
 
-.btn-outline:hover {
-    background: #f0f9ff;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+@media (hover: hover) {
+    .btn-outline:hover {
+        background: #f0f9ff;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.btn-outline:active {
+    transform: translateY(0);
+    opacity: 0.9;
+    /* Touch feedback */
 }
 
 .section-title {
@@ -2491,6 +2513,7 @@ footer {
    ========================================= */
 
 @media (max-width: 768px) {
+
     /* Hide desktop auth buttons to remove clutter */
     .nav-auth {
         display: none !important;

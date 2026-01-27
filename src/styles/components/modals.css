@@ -1,0 +1,63 @@
+/* Modal Animation System - Phase 2 */
+
+/* Modal Container */
+.modal {
+    position: fixed;
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -50%) scale(0.95);
+    transition:
+        opacity var(--timing-base) var(--easing-smooth),
+        transform var(--timing-base) var(--easing-entrance),
+        visibility 0s linear var(--timing-base);
+}
+
+.modal.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, -50%) scale(1);
+    transition:
+        opacity var(--timing-base) var(--easing-smooth),
+        transform var(--timing-base) var(--easing-entrance),
+        visibility 0s linear 0s;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition:
+        opacity var(--timing-base) var(--easing-smooth),
+        visibility 0s linear var(--timing-base);
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+    visibility: visible;
+    transition:
+        opacity var(--timing-base) var(--easing-smooth),
+        visibility 0s linear 0s;
+}
+
+/* Mobile: Full-screen modals */
+@media (max-width: 768px) {
+    .modal {
+        top: auto;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        max-width: 100%;
+        transform: translateY(100%);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    }
+
+    .modal.show {
+        transform: translateY(0);
+    }
+}

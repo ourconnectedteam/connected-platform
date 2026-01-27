@@ -1,0 +1,77 @@
+/* Utility Classes */
+
+/* Container */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin-inline: auto;
+    padding-inline: 24px;
+    box-sizing: border-box;
+}
+
+.container-wide {
+    width: 100%;
+    max-width: 95%;
+    margin-inline: auto;
+    padding-inline: 24px;
+    box-sizing: border-box;
+}
+
+/* Section Title */
+.section-title {
+    font-size: var(--text-4xl);
+    font-weight: var(--weight-bold);
+    text-align: center;
+    margin-bottom: var(--space-12);
+    letter-spacing: -0.02em;
+}
+
+/* Animations */
+.fade-in-up {
+    opacity: 0;
+    transform: translateY(20px);
+    transition:
+        opacity 0.6s ease-out,
+        transform 0.6s ease-out;
+}
+
+.fade-in-up.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.dashboard-mockup {
+    transition: transform 0.1s ease-out;
+    will-change: transform;
+}
+
+/* Animation Delays */
+.delay-100 {
+    transition-delay: 0.1s;
+}
+
+.delay-200 {
+    transition-delay: 0.2s;
+}
+
+.delay-300 {
+    transition-delay: 0.3s;
+}
+
+.delay-400 {
+    transition-delay: 0.4s;
+}
+
+/* Premium Noise Overlay */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    mix-blend-mode: overlay;
+}

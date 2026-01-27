@@ -1,8 +1,23 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import compression from 'vite-plugin-compression';
 
 export default defineConfig({
     root: '.', // Ensure root is the current directory
+    plugins: [
+        // Phase 2: Brotli compression for 30-40% smaller bundles
+        compression({
+            algorithm: 'brotliCompress',
+            ext: '.br',
+            threshold: 10240, // Only compress files > 10KB
+        }),
+        // Gzip fallback for older browsers
+        compression({
+            algorithm: 'gzip',
+            ext: '.gz',
+            threshold: 10240,
+        }),
+    ],
     build: {
         outDir: 'dist',
         rollupOptions: {
