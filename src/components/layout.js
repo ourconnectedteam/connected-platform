@@ -2,7 +2,7 @@ import { auth } from '../lib/auth.js';
 
 const NAV_TEMPLATE = `
     <div class="container">
-        <a href="/" class="logo">Connected</a>
+        <a href="/" class="logo" style="display: flex; align-items: center; margin-left: -8px;"><img src="/assets/connected-logo.png" alt="Connected Logo" style="width: 32px; height: 32px; margin-right: 8px;">Connected</a>
         <div class="nav-links">
             <a href="/index.html">Home</a>
             <a href="/tutors.html">Tutors</a>
@@ -24,7 +24,7 @@ const NAV_TEMPLATE = `
 const FOOTER_TEMPLATE = `
     <div class="container">
         <div class="footer-content">
-            <div class="footer-logo">Connected</div>
+            <div class="footer-logo" style="display: flex; align-items: center;"><img src="/assets/connected-logo.png" alt="Connected Logo" style="width: 28px; height: 28px; margin-right: 8px;">Connected</div>
             <div class="footer-links">
                 <a href="#">About</a>
                 <a href="#">Contact</a>
