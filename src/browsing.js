@@ -1,4 +1,5 @@
 import { supabase } from './lib/supabase.js';
+import { logger } from './lib/logger.js';
 
 export async function renderBrowsingPage(type) {
     const grid = document.querySelector('.profiles-grid');
@@ -8,8 +9,12 @@ export async function renderBrowsingPage(type) {
     grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Loading profiles...</p>';
 
     // 1. Collect Filters
-    const subjects = Array.from(document.querySelectorAll('input[name="subject"]:checked')).map(cb => cb.value);
-    const prices = Array.from(document.querySelectorAll('input[name="price"]:checked')).map(cb => cb.value); // low, mid, high
+    const subjects = Array.from(document.querySelectorAll('input[name="subject"]:checked')).map(
+        cb => cb.value
+    );
+    const prices = Array.from(document.querySelectorAll('input[name="price"]:checked')).map(
+        cb => cb.value
+    ); // low, mid, high
 
     let query;
     if (type === 'tutor') {
@@ -26,18 +31,18 @@ export async function renderBrowsingPage(type) {
         // Price Filter
         if (prices.length > 0) {
             // Complex OR logic for ranges is hard in simple Chaining.
-            // We can check range. 
+            // We can check range.
             // If multiple ranges selected, we need (range1 OR range2).
             const orConditions = [];
             if (prices.includes('low')) orConditions.push('hourly_rate.lt.40');
-            if (prices.includes('mid')) orConditions.push('and(hourly_rate.gte.40,hourly_rate.lte.60)');
+            if (prices.includes('mid'))
+                orConditions.push('and(hourly_rate.gte.40,hourly_rate.lte.60)');
             if (prices.includes('high')) orConditions.push('hourly_rate.gt.60');
 
             if (orConditions.length > 0) {
                 query = query.or(orConditions.join(','));
             }
         }
-
     } else if (type === 'counselor') {
         query = supabase.from('counselor_profiles').select('*, profiles(*)');
         // Add counselor filters here if needed
@@ -46,16 +51,18 @@ export async function renderBrowsingPage(type) {
     }
 
     const { data: profiles, error } = await query;
-    console.log('Browsing Query Result:', { type, profiles, error, subjects, prices });
+    logger.debug('Browsing Query Result:', { type, profiles, error, subjects, prices });
 
     if (error) {
         console.error('Error fetching profiles:', error);
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to load profiles. Please try again later.</p>';
+        grid.innerHTML =
+            '<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to load profiles. Please try again later.</p>';
         return;
     }
 
     if (!profiles || profiles.length === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No profiles found matching your criteria.</p>';
+        grid.innerHTML =
+            '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No profiles found matching your criteria.</p>';
         return;
     }
 
@@ -78,7 +85,8 @@ export async function renderBrowsingPage(type) {
     });
 
     if (validCards === 0) {
-        grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No valid profiles found.</p>';
+        grid.innerHTML =
+            '<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary);">No valid profiles found.</p>';
     }
 
     // Attach Listeners ONLY ONCE (Check if attached)
@@ -90,7 +98,9 @@ export async function renderBrowsingPage(type) {
         const clearBtn = document.querySelector('.filter-header .btn-text');
         if (clearBtn) {
             clearBtn.addEventListener('click', () => {
-                document.querySelectorAll('input[type="checkbox"]').forEach(i => i.checked = false);
+                document
+                    .querySelectorAll('input[type="checkbox"]')
+                    .forEach(i => (i.checked = false));
                 renderBrowsingPage(type);
             });
         }
@@ -105,7 +115,8 @@ function createCard(type, details, user) {
     // Default Images based on role if avatar is missing
     let img = user.avatar_url;
     if (!img) {
-        if (type === 'tutor') img = '/assets/tutor.png'; // Fallback
+        if (type === 'tutor')
+            img = '/assets/tutor.png'; // Fallback
         else if (type === 'counselor') img = '/assets/counselor.png';
         else img = '/assets/student.png';
     }
@@ -117,7 +128,7 @@ function createCard(type, details, user) {
     let priceInfo = '';
 
     if (type === 'tutor') {
-        details.subjects?.forEach(sub => tagsHtml += `<span class="tag">${sub}</span>`);
+        details.subjects?.forEach(sub => (tagsHtml += `<span class="tag">${sub}</span>`));
         subtext = 'Tutor';
         priceInfo = `<div class="price">$${details.hourly_rate || '?'}<span>/hr</span></div>`;
         actionBtn = `
@@ -125,15 +136,16 @@ function createCard(type, details, user) {
             <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
             <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     } else if (type === 'counselor') {
-        details.specialties?.forEach(spec => tagsHtml += `<span class="tag">${spec}</span>`);
+        details.specialties?.forEach(spec => (tagsHtml += `<span class="tag">${spec}</span>`));
         subtext = 'Counselor';
         priceInfo = `<div class="price">$${details.hourly_rate || '?'}<span>/hr</span></div>`;
         actionBtn = `
             <a href="/booking.html?providerId=${user.id}&name=${encodeURIComponent(user.full_name)}&role=Counselor&price=${details.hourly_rate}&img=${encodeURIComponent(img)}" class="btn btn-primary btn-sm btn-wide">Book</a>
             <button class="btn btn-secondary btn-sm btn-wide" onclick="startChat('${user.id}')">Message</button>
             <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
-    } else { // Student
-        details.ib_subjects?.forEach(sub => tagsHtml += `<span class="tag">${sub}</span>`);
+    } else {
+        // Student
+        details.ib_subjects?.forEach(sub => (tagsHtml += `<span class="tag">${sub}</span>`));
         subtext = details.ib_status || 'Student';
         priceInfo = ''; // No price for students
         actionBtn = `
@@ -142,13 +154,15 @@ function createCard(type, details, user) {
             <a href="/profile.html?id=${user.id}" class="btn btn-outline btn-sm btn-full">View Profile</a>`;
     }
 
-    const verifiedBadge = user.verified ? `
+    const verifiedBadge = user.verified
+        ? `
         <div class="verified-badge">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <path d="M10 4L4.5 9.5L2 7" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
             Verified
-        </div>` : '';
+        </div>`
+        : '';
 
     card.innerHTML = `
         <div class="card-image-wrapper">
@@ -265,16 +279,18 @@ function showToast(title, message, type = 'success') {
 // START CONVERSATION / CONNECTION REQUEST
 import { messaging } from './lib/messaging.js';
 
-window.sendConnectionRequest = async (receiverId) => {
+window.sendConnectionRequest = async receiverId => {
     // Check auth
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
         showToast('Authentication Required', 'Please log in to connect.', 'error');
         return;
     }
 
     // For Buddies, "Connect" -> Send Request (Existing logic) OR Start Chat (New Logic)?
-    // User requested "messaging between students". 
+    // User requested "messaging between students".
     // Let's make "Connect" send a request, and once accepted, they can chat (dashboard).
     // BUT for simplicity and "instant chat" requests often seen in MVPs:
     // Let's also allow a direct "Message" button if the user prefers.
@@ -282,7 +298,7 @@ window.sendConnectionRequest = async (receiverId) => {
     // For now, let's keep Connect as Request, but verify it works.
     const { error } = await supabase.from('connection_requests').insert({
         requester_id: user.id,
-        receiver_id: receiverId
+        receiver_id: receiverId,
     });
 
     if (error) {
@@ -296,8 +312,10 @@ window.sendConnectionRequest = async (receiverId) => {
     }
 };
 
-window.startChat = async (receiverId) => {
-    const { data: { user } } = await supabase.auth.getUser();
+window.startChat = async receiverId => {
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
         window.location.href = '/src/auth.html#login';
         return;
@@ -310,7 +328,11 @@ window.startChat = async (receiverId) => {
     } else {
         // Redirect to dashboard messages tab
         // Determine dashboard type based on MY role
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
         let dashPath = '/dashboard-student.html'; // default
         if (profile.role === 'tutor') dashPath = '/dashboard-tutor.html';
         if (profile.role === 'counselor') dashPath = '/counselor-dashboard.html';

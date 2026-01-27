@@ -47,7 +47,10 @@ export async function initLayout() {
         const currentPath = window.location.pathname;
         const links = nav.querySelectorAll('.nav-links a');
         links.forEach(link => {
-            if (link.getAttribute('href') === currentPath || (currentPath === '/' && link.getAttribute('href') === '/index.html')) {
+            if (
+                link.getAttribute('href') === currentPath ||
+                (currentPath === '/' && link.getAttribute('href') === '/index.html')
+            ) {
                 link.classList.add('active');
                 link.style.color = 'var(--text-primary)';
                 link.style.fontWeight = '600';

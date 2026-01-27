@@ -9,233 +9,247 @@
         content="Find trusted tutors, university counselors, and study buddies built specifically for the IB.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FIXED: Optimized font loading with preload and swap -->
+    <link rel="preload" as="style"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"
+        media="print" onload="this.media='all'">
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    </noscript>
     <link rel="stylesheet" href="/src/style.css">
 </head>
 
 <body>
-    <nav class="navbar"></nav>
+    <nav class="navbar" aria-label="Main navigation"></nav>
 
-    <header class="hero">
-        <div class="container">
-            <div class="hero-content fade-in-up">
-                <h1>Revolutionizing Education, <br><span class="gradient-text">Reimagining Admissions.</span></h1>
-                <p class="subheadline">Connect with expert IB tutors and university counselors. Instant booking,
-                    verified professionals, personalized support.</p>
+    <main>
+        <header class="hero">
+            <div class="container">
+                <div class="hero-content fade-in-up">
+                    <h1>Revolutionizing Education, <br><span class="gradient-text">Reimagining Admissions.</span></h1>
+                    <p class="subheadline">Connect with expert IB tutors and university counselors. Instant booking,
+                        verified professionals, personalized support.</p>
 
-                <div class="hero-search-wrapper">
-                    <input type="text" class="hero-search-input"
-                        placeholder="Search for subjects, tutors, or counselors...">
-                </div>
-
-                <div class="cta-group">
-                    <a href="src/auth.html#signup" class="btn btn-primary">Sign Up</a>
-                    <a href="src/auth.html#login" class="btn btn-secondary">Log In</a>
-                </div>
-            </div>
-            <div class="hero-visual fade-in-up delay-200">
-                <div class="dashboard-mockup">
-                    <div class="mockup-header">
-                        <span class="dot red"></span>
-                        <span class="dot yellow"></span>
-                        <span class="dot green"></span>
+                    <div class="hero-search-wrapper">
+                        <input type="text" class="hero-search-input"
+                            placeholder="Search for subjects, tutors, or counselors...">
                     </div>
-                    <div class="mockup-body">
-                        <!-- Abstract representation of the dashboard -->
-                        <div class="mockup-sidebar">
-                            <div class="sidebar-item active">
-                                <span class="sidebar-line"></span> Dashboard
-                            </div>
-                            <div class="sidebar-item">
-                                <span class="sidebar-line"></span> Tutors
-                            </div>
-                            <div class="sidebar-item">
-                                <span class="sidebar-line"></span> Messages
-                            </div>
-                            <div class="sidebar-item">
-                                <span class="sidebar-line"></span> Calendar
-                            </div>
-                        </div>
-                        <div class="mockup-main">
-                            <!-- Tutor Card -->
-                            <div class="mockup-card">
-                                <img src="/assets/tutor.png" class="avatar-img" alt="Tutor">
-                                <div class="card-info">
-                                    <div class="card-name">Sarah Jenkins</div>
-                                    <div class="card-role">Academic Tutor</div>
-                                    <div class="card-tags">
-                                        <span class="tag purple">Oxford Grad</span>
-                                        <span class="tag">English</span>
-                                        <span class="tag">History</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Counselor Card -->
-                            <div class="mockup-card">
-                                <img src="/assets/counselor.png" class="avatar-img" alt="Counselor">
-                                <div class="card-info">
-                                    <div class="card-name">Maria Fernandez</div>
-                                    <div class="card-role">Uni Counselor</div>
-                                    <div class="card-tags">
-                                        <span class="tag green">Harvard Alumni</span>
-                                        <span class="tag">US/UK Expert</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Student Card -->
-                            <div class="mockup-card">
-                                <img src="/assets/student.png" class="avatar-img" alt="Student">
-                                <div class="card-info">
-                                    <div class="card-name">Isabella Williams</div>
-                                    <div class="card-role">IB Student</div>
-                                    <div class="card-tags">
-                                        <span class="tag blue">Predicted 44</span>
-                                        <span class="tag">Math AA</span>
-                                        <span class="tag">Physics</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="glow-effect"></div>
+
+                    <div class="cta-group">
+                        <a href="src/auth.html#signup" class="btn btn-primary">Sign Up</a>
+                        <a href="src/auth.html#login" class="btn btn-secondary">Log In</a>
                     </div>
                 </div>
-            </div>
-    </header>
+                <div class="hero-visual fade-in-up delay-200">
+                    <div class="dashboard-mockup">
+                        <div class="mockup-header">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <div class="mockup-body">
+                            <!-- Abstract representation of the dashboard -->
+                            <div class="mockup-sidebar">
+                                <div class="sidebar-item active">
+                                    <span class="sidebar-line"></span> Dashboard
+                                </div>
+                                <div class="sidebar-item">
+                                    <span class="sidebar-line"></span> Tutors
+                                </div>
+                                <div class="sidebar-item">
+                                    <span class="sidebar-line"></span> Messages
+                                </div>
+                                <div class="sidebar-item">
+                                    <span class="sidebar-line"></span> Calendar
+                                </div>
+                            </div>
+                            <div class="mockup-main">
+                                <!-- Tutor Card -->
+                                <div class="mockup-card">
+                                    <img src="/assets/tutor.png" class="avatar-img" alt="Tutor" loading="lazy"
+                                        decoding="async" width="56" height="56">
+                                    <div class="card-info">
+                                        <div class="card-name">Sarah Jenkins</div>
+                                        <div class="card-role">Academic Tutor</div>
+                                        <div class="card-tags">
+                                            <span class="tag purple">Oxford Grad</span>
+                                            <span class="tag">English</span>
+                                            <span class="tag">History</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Counselor Card -->
+                                <div class="mockup-card">
+                                    <img src="/assets/counselor.png" class="avatar-img" alt="Counselor" loading="lazy"
+                                        decoding="async" width="56" height="56">
+                                    <div class="card-info">
+                                        <div class="card-name">Maria Fernandez</div>
+                                        <div class="card-role">Uni Counselor</div>
+                                        <div class="card-tags">
+                                            <span class="tag green">Harvard Alumni</span>
+                                            <span class="tag">US/UK Expert</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Student Card -->
+                                <div class="mockup-card">
+                                    <img src="/assets/student.png" class="avatar-img" alt="Student" loading="lazy"
+                                        decoding="async" width="56" height="56">
+                                    <div class="card-info">
+                                        <div class="card-name">Isabella Williams</div>
+                                        <div class="card-role">IB Student</div>
+                                        <div class="card-tags">
+                                            <span class="tag blue">Predicted 44</span>
+                                            <span class="tag">Math AA</span>
+                                            <span class="tag">Physics</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="glow-effect"></div>
+                        </div>
+                    </div>
+                </div>
+        </header>
 
-    <section id="problem" class="problem-section">
-        <div class="container">
-            <h2 class="section-title fade-in-up">The IB is hard enough. <br>Finding support shouldn't be.</h2>
-            <div class="problem-grid">
-                <div class="problem-card fade-in-up delay-100">
-                    <div class="icon-box">❌</div>
-                    <h3>Hard to find specialized help</h3>
-                    <p>Generic tutors often don't understand the specific demands of the IB curriculum.</p>
+        <section id="problem" class="problem-section">
+            <div class="container">
+                <h2 class="section-title fade-in-up">The IB is hard enough. <br>Finding support shouldn't be.</h2>
+                <div class="problem-grid">
+                    <div class="problem-card fade-in-up delay-100">
+                        <div class="icon-box">❌</div>
+                        <h3>Hard to find specialized help</h3>
+                        <p>Generic tutors often don't understand the specific demands of the IB curriculum.</p>
+                    </div>
+                    <div class="problem-card fade-in-up delay-200">
+                        <div class="icon-box">❌</div>
+                        <h3>Confusing counseling</h3>
+                        <p>University guidance is often expensive, vague, and not tailored to international students.
+                        </p>
+                    </div>
+                    <div class="problem-card fade-in-up delay-300">
+                        <div class="icon-box">❌</div>
+                        <h3>Isolating study grind</h3>
+                        <p>Studying alone can be stressful. It's hard to find peers taking the same HL subjects.</p>
+                    </div>
                 </div>
-                <div class="problem-card fade-in-up delay-200">
-                    <div class="icon-box">❌</div>
-                    <h3>Confusing counseling</h3>
-                    <p>University guidance is often expensive, vague, and not tailored to international students.</p>
-                </div>
-                <div class="problem-card fade-in-up delay-300">
-                    <div class="icon-box">❌</div>
-                    <h3>Isolating study grind</h3>
-                    <p>Studying alone can be stressful. It's hard to find peers taking the same HL subjects.</p>
-                </div>
+                <p class="problem-summary fade-in-up delay-400">IB students deserve a simpler, smarter solution.</p>
             </div>
-            <p class="problem-summary fade-in-up delay-400">IB students deserve a simpler, smarter solution.</p>
-        </div>
-    </section>
+        </section>
 
-    <section id="solution" class="solution-section">
-        <div class="container">
-            <div class="section-header fade-in-up">
-                <h2>Meet Connected</h2>
-                <p>A curated platform built <strong>by students, for students</strong>, designed to support you
-                    throughout your IB
-                    journey.</p>
+        <section id="solution" class="solution-section">
+            <div class="container">
+                <div class="section-header fade-in-up">
+                    <h2>Meet Connected</h2>
+                    <p>A curated platform built <strong>by students, for students</strong>, designed to support you
+                        throughout your IB
+                        journey.</p>
+                </div>
+                <div class="feature-grid">
+                    <div id="tutors" class="feature-card fade-in-up delay-100">
+                        <div class="card-gradient blue"></div>
+                        <h3>Tutors</h3>
+                        <ul>
+                            <li>✨ IB-verified Top Scorers</li>
+                            <li>📚 Subject-specific help</li>
+                            <li>🗓️ Flexible sessions</li>
+                        </ul>
+                    </div>
+                    <div id="counselors" class="feature-card fade-in-up delay-200">
+                        <div class="card-gradient purple"></div>
+                        <h3>Counselors</h3>
+                        <ul>
+                            <li>🎓 University & career guidance</li>
+                            <li>📝 Personal statement support</li>
+                            <li>🚀 Application strategy</li>
+                        </ul>
+                    </div>
+                    <div id="buddies" class="feature-card fade-in-up delay-300">
+                        <div class="card-gradient orange"></div>
+                        <h3>Study Buddies</h3>
+                        <ul>
+                            <li>🤝 Match by HL/SL subjects</li>
+                            <li>💡 Study together</li>
+                            <li>🔥 Stay motivated</li>
+                        </ul>
+                    </div>
+                </div>
             </div>
-            <div class="feature-grid">
-                <div id="tutors" class="feature-card fade-in-up delay-100">
-                    <div class="card-gradient blue"></div>
-                    <h3>Tutors</h3>
-                    <ul>
-                        <li>✨ IB-verified Top Scorers</li>
-                        <li>📚 Subject-specific help</li>
-                        <li>🗓️ Flexible sessions</li>
-                    </ul>
-                </div>
-                <div id="counselors" class="feature-card fade-in-up delay-200">
-                    <div class="card-gradient purple"></div>
-                    <h3>Counselors</h3>
-                    <ul>
-                        <li>🎓 University & career guidance</li>
-                        <li>📝 Personal statement support</li>
-                        <li>🚀 Application strategy</li>
-                    </ul>
-                </div>
-                <div id="buddies" class="feature-card fade-in-up delay-300">
-                    <div class="card-gradient orange"></div>
-                    <h3>Study Buddies</h3>
-                    <ul>
-                        <li>🤝 Match by HL/SL subjects</li>
-                        <li>💡 Study together</li>
-                        <li>🔥 Stay motivated</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
+        </section>
 
-    <section id="how-it-works" class="steps-section">
-        <div class="container">
-            <h2 class="section-title fade-in-up">How it Works</h2>
-            <div class="steps-container">
-                <div class="step fade-in-up delay-100">
-                    <div class="step-number">1</div>
-                    <h3>Sign Up</h3>
-                    <p>Create your profile and set your subjects.</p>
-                </div>
-                <div class="step-connector"></div>
-                <div class="step fade-in-up delay-200">
-                    <div class="step-number">2</div>
-                    <h3>Choose Support</h3>
-                    <p>Find a tutor, counselor, or study buddy.</p>
-                </div>
-                <div class="step-connector"></div>
-                <div class="step fade-in-up delay-300">
-                    <div class="step-number">3</div>
-                    <h3>Get Connected</h3>
-                    <p>Book a session or start chatting instantly.</p>
+        <section id="how-it-works" class="steps-section">
+            <div class="container">
+                <h2 class="section-title fade-in-up">How it Works</h2>
+                <div class="steps-container">
+                    <div class="step fade-in-up delay-100">
+                        <div class="step-number">1</div>
+                        <h3>Sign Up</h3>
+                        <p>Create your profile and set your subjects.</p>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step fade-in-up delay-200">
+                        <div class="step-number">2</div>
+                        <h3>Choose Support</h3>
+                        <p>Find a tutor, counselor, or study buddy.</p>
+                    </div>
+                    <div class="step-connector"></div>
+                    <div class="step fade-in-up delay-300">
+                        <div class="step-number">3</div>
+                        <h3>Get Connected</h3>
+                        <p>Book a session or start chatting instantly.</p>
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <section class="trust-section">
-        <div class="container fade-in-up">
-            <div class="trust-badge badge-blue">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <line x1="2" y1="12" x2="22" y2="12"></line>
-                    <path
-                        d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
-                    </path>
-                </svg>
-                <span>Built for IB students worldwide</span>
-            </div>
-            <div class="trust-badge badge-green">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" class="text-green-500">
-                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                </svg>
-                <span>Curated & verified profiles</span>
-            </div>
-            <div class="trust-badge badge-purple">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" class="text-purple-500">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                    <circle cx="9" cy="7" r="4"></circle>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <span>Community-driven learning</span>
-            </div>
-        </div>
-    </section>
-
-    <section id="join" class="cta-section">
-        <div class="container fade-in-up">
-            <div class="cta-box">
-                <h2>Ready to make IB easier?</h2>
-                <p>Join Connected and be part of the first group to get access.</p>
-                <div class="cta-buttons">
-                    <a href="/src/auth.html#signup" class="btn btn-primary">Sign Up</a>
-                    <a href="/src/auth.html#login" class="btn btn-secondary btn-white">Log In</a>
+        <section class="trust-section">
+            <div class="container fade-in-up">
+                <div class="trust-badge badge-blue">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="text-blue-500">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path
+                            d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                        </path>
+                    </svg>
+                    <span>Built for IB students worldwide</span>
+                </div>
+                <div class="trust-badge badge-green">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="text-green-500">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    </svg>
+                    <span>Curated & verified profiles</span>
+                </div>
+                <div class="trust-badge badge-purple">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" class="text-purple-500">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="9" cy="7" r="4"></circle>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <span>Community-driven learning</span>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <section id="join" class="cta-section">
+            <div class="container fade-in-up">
+                <div class="cta-box">
+                    <h2>Ready to make IB easier?</h2>
+                    <p>Join Connected and be part of the first group to get access.</p>
+                    <div class="cta-buttons">
+                        <a href="/src/auth.html#signup" class="btn btn-primary">Sign Up</a>
+                        <a href="/src/auth.html#login" class="btn btn-secondary btn-white">Log In</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
 
     <footer></footer>
 

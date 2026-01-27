@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { logger } from './logger.js';
 
 export const email = {
     /**
@@ -6,7 +7,7 @@ export const email = {
      * @param {Object} bookingDetails - { studentName, providerName, date, time, link }
      */
     async sendBookingConfirmation(bookingDetails) {
-        console.log('📧 Sending Booking Confirmation Email...', bookingDetails);
+        logger.debug('📧 Sending Booking Confirmation Email...', bookingDetails);
 
         // In a real production environment, we would call the Edge Function:
         /*
@@ -21,7 +22,7 @@ export const email = {
 
         // SIMULATION: delay to mimic network request
         await new Promise(resolve => setTimeout(resolve, 800));
-        console.log('✅ Email Sent Successfully (Simulated)');
+        logger.debug('✅ Email Sent Successfully (Simulated)');
 
         return { success: true };
     },
@@ -31,9 +32,9 @@ export const email = {
      * @param {Object} userDetails - { email, name }
      */
     async sendWelcomeEmail(userDetails) {
-        console.log('📧 Sending Welcome Email...', userDetails);
+        logger.debug('📧 Sending Welcome Email...', userDetails);
         // Simulation
         await new Promise(resolve => setTimeout(resolve, 500));
         return { success: true };
-    }
+    },
 };

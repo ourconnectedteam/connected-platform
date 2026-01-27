@@ -1,180 +1,198 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login / Sign Up | Connected</title>
+        <link rel="stylesheet" href="/src/style.css" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            .auth-container {
+                max-width: 400px;
+                margin: 80px auto;
+                padding: 32px;
+                background: white;
+                border-radius: 24px;
+                box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+                border: 1px solid #e5e5e5;
+            }
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login / Sign Up | Connected</title>
-    <link rel="stylesheet" href="/src/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        .auth-container {
-            max-width: 400px;
-            margin: 80px auto;
-            padding: 32px;
-            background: white;
-            border-radius: 24px;
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
-            border: 1px solid #E5E5E5;
-        }
+            .auth-tabs {
+                display: flex;
+                margin-bottom: 24px;
+                border-bottom: 2px solid #e5e5e5;
+            }
 
-        .auth-tabs {
-            display: flex;
-            margin-bottom: 24px;
-            border-bottom: 2px solid #E5E5E5;
-        }
+            .auth-tab {
+                flex: 1;
+                padding: 12px;
+                text-align: center;
+                cursor: pointer;
+                font-weight: 600;
+                color: var(--text-secondary);
+            }
 
-        .auth-tab {
-            flex: 1;
-            padding: 12px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 600;
-            color: var(--text-secondary);
-        }
+            .auth-tab.active {
+                color: #007aff;
+                border-bottom: 2px solid #007aff;
+                margin-bottom: -2px;
+            }
 
-        .auth-tab.active {
-            color: #007AFF;
-            border-bottom: 2px solid #007AFF;
-            margin-bottom: -2px;
-        }
+            .hidden {
+                display: none;
+            }
+        </style>
+    </head>
 
-        .hidden {
-            display: none;
-        }
-    </style>
-</head>
+    <body>
+        <nav class="navbar"></nav>
+        <div class="auth-container" style="margin-top: 120px">
+            <div class="auth-tabs">
+                <div class="auth-tab active" id="tab-login">Log In</div>
+                <div class="auth-tab" id="tab-signup">Sign Up</div>
+            </div>
 
-<nav class="navbar"></nav>
-<div class="auth-container" style="margin-top: 120px;">
-    <div class="auth-tabs">
-        <div class="auth-tab active" id="tab-login">Log In</div>
-        <div class="auth-tab" id="tab-signup">Sign Up</div>
-    </div>
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" class="form-input" required />
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%">
+                        Log In
+                    </button>
+                </div>
+            </form>
 
-    <!-- Login Form -->
-    <form id="login-form">
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="login-email" class="form-input" required>
+            <!-- Signup Form -->
+            <form id="signup-form" class="hidden">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="signup-email" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="signup-password" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" id="signup-confirm" class="form-input" required />
+                </div>
+                <div class="form-group">
+                    <label>I am a...</label>
+                    <select id="signup-role" class="form-input" style="background: white" required>
+                        <option value="student">Student</option>
+                        <option value="tutor">Tutor</option>
+                        <option value="counselor">Counselor</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary" style="width: 100%">
+                        Sign Up
+                    </button>
+                </div>
+            </form>
+
+            <div class="auth-divider">
+                <span>or</span>
+            </div>
+
+            <!-- Social Login -->
+            <div class="social-login-container">
+                <div class="social-login-grid">
+                    <button
+                        type="button"
+                        class="btn-social"
+                        onclick="window.handleSocialLogin('google')"
+                    >
+                        <img
+                            src="https://www.svgrepo.com/show/475656/google-color.svg"
+                            alt="Google"
+                        />
+                        Continue with Google
+                    </button>
+                </div>
+            </div>
+
+            <p
+                id="auth-message"
+                style="margin-top: 16px; text-align: center; color: red"
+                class="hidden"
+            ></p>
         </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="login-password" class="form-input" required>
-        </div>
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Log In</button>
-        </div>
-    </form>
 
-    <!-- Signup Form -->
-    <form id="signup-form" class="hidden">
-        <div class="form-group">
-            <label>Email</label>
-            <input type="email" id="signup-email" class="form-input" required>
-        </div>
-        <div class="form-group">
-            <label>Password</label>
-            <input type="password" id="signup-password" class="form-input" required>
-        </div>
-        <div class="form-group">
-            <label>Confirm Password</label>
-            <input type="password" id="signup-confirm" class="form-input" required>
-        </div>
-        <div class="form-group">
-            <label>I am a...</label>
-            <select id="signup-role" class="form-input" style="background: white;" required>
-                <option value="student">Student</option>
-                <option value="tutor">Tutor</option>
-                <option value="counselor">Counselor</option>
-            </select>
-        </div>
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary" style="width: 100%;">Sign Up</button>
-        </div>
-    </form>
+        <script type="module">
+            import { auth } from '/src/lib/auth.js';
+            import { initLayout } from '/src/components/layout.js';
 
-    <div class="auth-divider">
-        <span>or</span>
-    </div>
+            // Initialize Navbar
+            initLayout();
 
-    <!-- Social Login -->
-    <div class="social-login-container">
-        <div class="social-login-grid">
-            <button type="button" class="btn-social" onclick="window.handleSocialLogin('google')">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google">
-                Continue with Google
-            </button>
-        </div>
-    </div>
+            const tabLogin = document.getElementById('tab-login');
+            const tabSignup = document.getElementById('tab-signup');
+            const loginForm = document.getElementById('login-form');
+            const signupForm = document.getElementById('signup-form');
+            const msg = document.getElementById('auth-message');
 
-    <p id="auth-message" style="margin-top: 16px; text-align: center; color: red;" class="hidden"></p>
-</div>
+            // Function to switch tabs
+            function switchTab(tab) {
+                msg.classList.add('hidden');
+                if (tab === 'signup') {
+                    tabSignup.classList.add('active');
+                    tabLogin.classList.remove('active');
+                    signupForm.classList.remove('hidden');
+                    loginForm.classList.add('hidden');
+                } else {
+                    tabLogin.classList.add('active');
+                    tabSignup.classList.remove('active');
+                    loginForm.classList.remove('hidden');
+                    signupForm.classList.add('hidden');
+                }
+            }
 
-<script type="module">
-    import { auth } from '/src/lib/auth.js';
-    import { initLayout } from '/src/components/layout.js';
+            // Check URL Hash on Load
+            if (window.location.hash === '#signup') {
+                switchTab('signup');
+            }
 
-    // Initialize Navbar
-    initLayout();
+            // Toggle Tabs Handlers
+            tabLogin.addEventListener('click', () => {
+                switchTab('login');
+                history.pushState(null, null, '#login');
+            });
 
-    const tabLogin = document.getElementById('tab-login');
-    const tabSignup = document.getElementById('tab-signup');
-    const loginForm = document.getElementById('login-form');
-    const signupForm = document.getElementById('signup-form');
-    const msg = document.getElementById('auth-message');
+            tabSignup.addEventListener('click', () => {
+                switchTab('signup');
+                history.pushState(null, null, '#signup');
+            });
 
-    // Function to switch tabs
-    function switchTab(tab) {
-        msg.classList.add('hidden');
-        if (tab === 'signup') {
-            tabSignup.classList.add('active');
-            tabLogin.classList.remove('active');
-            signupForm.classList.remove('hidden');
-            loginForm.classList.add('hidden');
-        } else {
-            tabLogin.classList.add('active');
-            tabSignup.classList.remove('active');
-            loginForm.classList.remove('hidden');
-            signupForm.classList.add('hidden');
-        }
-    }
+            // Handle Login
+            loginForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
 
-    // Check URL Hash on Load
-    if (window.location.hash === '#signup') {
-        switchTab('signup');
-    }
+                const { data, error } = await auth.signIn(email, password);
+                if (error) {
+                    msg.textContent = error.message;
+                    msg.classList.remove('hidden');
+                } else {
+                    window.location.href = '/'; // Go to home, logic there will redirect if needed
+                }
+            });
 
-    // Toggle Tabs Handlers
-    tabLogin.addEventListener('click', () => {
-        switchTab('login');
-        history.pushState(null, null, '#login');
-    });
-
-    tabSignup.addEventListener('click', () => {
-        switchTab('signup');
-        history.pushState(null, null, '#signup');
-    });
-
-    // Handle Login
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
-
-        const { data, error } = await auth.signIn(email, password);
-        if (error) {
-            msg.textContent = error.message;
-            msg.classList.remove('hidden');
-        } else {
-            window.location.href = '/'; // Go to home, logic there will redirect if needed
-        }
-    });
-
-    // Toast Notification Function
-    const showToast = (message) => {
-        const toast = document.createElement('div');
-        toast.style.cssText = `
+            // Toast Notification Function
+            const showToast = message => {
+                const toast = document.createElement('div');
+                toast.style.cssText = `
             position: fixed;
             top: 24px;
             left: 50%;
@@ -193,73 +211,75 @@
             opacity: 0;
             transition: opacity 0.3s ease, transform 0.3s ease;
         `;
-        toast.innerHTML = `
+                toast.innerHTML = `
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="20 6 9 17 4 12"></polyline>
             </svg>
             ${message}
         `;
-        document.body.appendChild(toast);
+                document.body.appendChild(toast);
 
-        // Animate In
-        requestAnimationFrame(() => {
-            toast.style.opacity = '1';
-            toast.style.transform = 'translateX(-50%) translateY(0)';
-        });
+                // Animate In
+                requestAnimationFrame(() => {
+                    toast.style.opacity = '1';
+                    toast.style.transform = 'translateX(-50%) translateY(0)';
+                });
 
-        // Remove after 3s
-        setTimeout(() => {
-            toast.style.opacity = '0';
-            toast.style.transform = 'translateX(-50%) translateY(-10px)';
-            setTimeout(() => toast.remove(), 300);
-        }, 3000);
-    };
-
-    // Handle Signup
-    signupForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const email = document.getElementById('signup-email').value;
-        const password = document.getElementById('signup-password').value;
-        const confirm = document.getElementById('signup-confirm').value;
-
-        const role = document.getElementById('signup-role').value;
-
-        if (password !== confirm) {
-            msg.textContent = "Passwords do not match";
-            msg.classList.remove('hidden');
-            return;
-        }
-
-        const { data, error } = await auth.signUp(email, password, role);
-        if (error) {
-            msg.textContent = error.message;
-            msg.classList.remove('hidden');
-        } else {
-            msg.classList.add('hidden'); // Hide any previous messages
-
-            // Check if session exists (Auto-login was successful)
-            if (data.session) {
-                showToast('Account Successfully Created!');
+                // Remove after 3s
                 setTimeout(() => {
-                    window.location.href = '/onboarding.html';
-                }, 1500); // Wait a bit for toast to be seen
-            } else {
-                // No session (maybe email confirm required?), try forceful login just in case
-                // Sometimes Supabase returns user but no session depending on config
-                const { data: loginData, error: loginError } = await auth.signIn(email, password);
-                if (loginData.session) {
-                    showToast('Account Successfully Created!');
-                    setTimeout(() => {
-                        window.location.href = '/onboarding.html';
-                    }, 1500);
-                } else {
-                    // Truly requires email confirmation
-                    showToast('Account created! Please check your email.');
-                }
-            }
-        }
-    });
-</script>
-</body>
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(-50%) translateY(-10px)';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
+            };
 
+            // Handle Signup
+            signupForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const email = document.getElementById('signup-email').value;
+                const password = document.getElementById('signup-password').value;
+                const confirm = document.getElementById('signup-confirm').value;
+
+                const role = document.getElementById('signup-role').value;
+
+                if (password !== confirm) {
+                    msg.textContent = 'Passwords do not match';
+                    msg.classList.remove('hidden');
+                    return;
+                }
+
+                const { data, error } = await auth.signUp(email, password, role);
+                if (error) {
+                    msg.textContent = error.message;
+                    msg.classList.remove('hidden');
+                } else {
+                    msg.classList.add('hidden'); // Hide any previous messages
+
+                    // Check if session exists (Auto-login was successful)
+                    if (data.session) {
+                        showToast('Account Successfully Created!');
+                        setTimeout(() => {
+                            window.location.href = '/onboarding.html';
+                        }, 1500); // Wait a bit for toast to be seen
+                    } else {
+                        // No session (maybe email confirm required?), try forceful login just in case
+                        // Sometimes Supabase returns user but no session depending on config
+                        const { data: loginData, error: loginError } = await auth.signIn(
+                            email,
+                            password
+                        );
+                        if (loginData.session) {
+                            showToast('Account Successfully Created!');
+                            setTimeout(() => {
+                                window.location.href = '/onboarding.html';
+                            }, 1500);
+                        } else {
+                            // Truly requires email confirmation
+                            showToast('Account created! Please check your email.');
+                        }
+                    }
+                }
+            });
+        </script>
+    </body>
 </html>

@@ -22,7 +22,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (targetEl) {
                 targetEl.classList.add('active');
                 // Load data based on tab
-                if (tab.dataset.tab === 'upcoming' || tab.dataset.tab === 'bookings') loadBookings();
+                if (tab.dataset.tab === 'upcoming' || tab.dataset.tab === 'bookings')
+                    loadBookings();
                 if (tab.dataset.tab === 'messages') loadConversations();
                 if (tab.dataset.tab === 'connections') loadConnections();
                 if (tab.dataset.tab === 'requests') loadRequests();
@@ -34,21 +35,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     async function loadBookings() {
-        const list = document.getElementById('bookings-list') || document.getElementById('upcoming-list');
+        const list =
+            document.getElementById('bookings-list') || document.getElementById('upcoming-list');
         if (!list) return;
         list.innerHTML = 'Loading...';
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         // Fetch bookings (simplified query)
         // Fetch bookings & reviews
-        const role = (document.title.includes('Tutor') || document.title.includes('Counselor')) ? 'provider_id' : 'student_id';
+        const role =
+            document.title.includes('Tutor') || document.title.includes('Counselor')
+                ? 'provider_id'
+                : 'student_id';
         const isProvider = role === 'provider_id';
 
         let query = supabase
             .from('bookings')
-            .select(`*, reviews(id, reviewer_id), profiles:${isProvider ? 'student_id' : 'provider_id'}(full_name)`)
+            .select(
+                `*, reviews(id, reviewer_id), profiles:${isProvider ? 'student_id' : 'provider_id'}(full_name)`
+            )
             .eq(role, user.id)
             .order('scheduled_start', { ascending: true });
 
@@ -68,51 +77,61 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        list.innerHTML = bookings.map(b => {
-            const otherUser = b.profiles;
-            const targetId = isProvider ? b.student_id : b.provider_id;
-            const isPast = new Date() > new Date(b.scheduled_end);
+        list.innerHTML = bookings
+            .map(b => {
+                const otherUser = b.profiles;
+                const targetId = isProvider ? b.student_id : b.provider_id;
+                const isPast = new Date() > new Date(b.scheduled_end);
 
-            // Check if WE have reviewed them
-            const hasReviewed = b.reviews && b.reviews.some(r => r.reviewer_id === user.id);
+                // Check if WE have reviewed them
+                const hasReviewed = b.reviews && b.reviews.some(r => r.reviewer_id === user.id);
 
-            // Status Logic
-            let statusBadge = '';
-            let actionBtn = '';
+                // Status Logic
+                let statusBadge = '';
+                let actionBtn = '';
 
-            if (b.status === 'pending_approval') {
-                statusBadge = '<div class="status-badge" style="background:#fff7ed; color:#c2410c; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Pending Approval</div>';
-            } else if (b.status === 'approved_pending_payment') {
-                statusBadge = '<div class="status-badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Awaiting Payment</div>';
-                if (!isProvider) {
-                    actionBtn = `<button class="btn btn-sm btn-primary" onclick="payNow('${b.id}')">Pay Now</button>`;
-                }
-            } else if (b.status === 'confirmed') {
-                statusBadge = '<div class="status-badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Confirmed</div>';
-
-                // Review Logic
-                if (isPast) {
-                    if (!hasReviewed) {
-                        actionBtn = `<button class="btn btn-sm btn-outline" onclick="openReviewModal('${b.id}', '${targetId}')">Rate User</button>`;
-                    } else {
-                        actionBtn = `<span style="font-size: 0.85rem; color: #059669; font-weight: 500;">Reviewed ✓</span>`;
+                if (b.status === 'pending_approval') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#fff7ed; color:#c2410c; border: 1px solid #fed7aa; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Pending Approval</div>';
+                } else if (b.status === 'approved_pending_payment') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Awaiting Payment</div>';
+                    if (!isProvider) {
+                        actionBtn = `<button class="btn btn-sm btn-primary" onclick="payNow('${b.id}')">Pay Now</button>`;
                     }
+                } else if (b.status === 'confirmed') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#ecfdf5; color:#047857; border: 1px solid #a7f3d0; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Confirmed</div>';
+
+                    // Review Logic
+                    if (isPast) {
+                        if (!hasReviewed) {
+                            actionBtn = `<button class="btn btn-sm btn-outline" onclick="openReviewModal('${b.id}', '${targetId}')">Rate User</button>`;
+                        } else {
+                            actionBtn = `<span style="font-size: 0.85rem; color: #059669; font-weight: 500;">Reviewed ✓</span>`;
+                        }
+                    }
+                } else if (b.status === 'completed') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#f3f4f6; color:#374151; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Completed</div>';
+                } else if (b.status === 'cancelled') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Cancelled</div>';
+                } else if (b.status === 'rejected') {
+                    statusBadge =
+                        '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Request Rejected</div>';
                 }
 
-            } else if (b.status === 'completed') {
-                statusBadge = '<div class="status-badge" style="background:#f3f4f6; color:#374151; border: 1px solid #e5e7eb; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Completed</div>';
-            } else if (b.status === 'cancelled') {
-                statusBadge = '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Cancelled</div>';
-            } else if (b.status === 'rejected') {
-                statusBadge = '<div class="status-badge" style="background:#fef2f2; color:#b91c1c; border: 1px solid #fecaca; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 500;">Request Rejected</div>';
-            }
+                // Buttons
+                const showMessage = b.status !== 'cancelled' && b.status !== 'rejected';
+                const showCancel =
+                    b.status !== 'cancelled' &&
+                    b.status !== 'completed' &&
+                    b.status !== 'rejected' &&
+                    !isPast;
+                const showTrash = b.status === 'cancelled' || b.status === 'rejected'; // User wants trash for cancelled
 
-            // Buttons
-            const showMessage = b.status !== 'cancelled' && b.status !== 'rejected';
-            const showCancel = b.status !== 'cancelled' && b.status !== 'completed' && b.status !== 'rejected' && !isPast;
-            const showTrash = b.status === 'cancelled' || b.status === 'rejected'; // User wants trash for cancelled
-
-            return `
+                return `
             <div class="booking-item">
                 <div style="flex: 1;">
                     <div style="display:flex; justify-content:space-between; align-items:start;">
@@ -131,14 +150,24 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
             </div>
-        `}).join('');
+        `;
+            })
+            .join('');
 
         // Helper for Review Modal
         window.openReviewModal = (bookingId, revieweeId) => {
             const modal = document.createElement('div');
             Object.assign(modal.style, {
-                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999'
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: '9999',
             });
             modal.innerHTML = `
                 <div style="background: white; padding: 24px; border-radius: 12px; width: 400px; max-width: 90%;">
@@ -179,7 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     reviewer_id: user.id,
                     reviewee_id: revieweeId,
                     rating: parseInt(rating),
-                    comment
+                    comment,
                 });
 
                 if (error) {
@@ -193,14 +222,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         };
 
-
         // Helper for Delete (Trash) - Custom Modal
-        window.deleteBookingWrapper = (id) => {
+        window.deleteBookingWrapper = id => {
             const modal = document.createElement('div');
             Object.assign(modal.style, {
-                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999',
-                backdropFilter: 'blur(4px)'
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: '9999',
+                backdropFilter: 'blur(4px)',
             });
 
             modal.innerHTML = `
@@ -252,12 +288,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             };
         };
 
-        window.payNow = async (id) => {
+        window.payNow = async id => {
             // Show Mock Stripe Modal
             const modal = document.createElement('div');
             Object.assign(modal.style, {
-                position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: '9999'
+                position: 'fixed',
+                top: '0',
+                left: '0',
+                width: '100%',
+                height: '100%',
+                background: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                zIndex: '9999',
             });
 
             modal.innerHTML = `
@@ -306,9 +350,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const toast = document.createElement('div');
                 toast.textContent = 'Payment Successful! Session Confirmed.';
                 Object.assign(toast.style, {
-                    position: 'fixed', bottom: '24px', right: '24px', padding: '16px 24px',
-                    background: '#2e7d32', color: 'white', borderRadius: '8px', zIndex: '10000',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                    position: 'fixed',
+                    bottom: '24px',
+                    right: '24px',
+                    padding: '16px 24px',
+                    background: '#2e7d32',
+                    color: 'white',
+                    borderRadius: '8px',
+                    zIndex: '10000',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
                 });
                 document.body.appendChild(toast);
                 setTimeout(() => toast.remove(), 3000);
@@ -322,7 +372,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('tab-messages');
         if (!container) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         const { data: conversations } = await messaging.getConversations(user.id);
 
         if (!conversations || conversations.length === 0) {
@@ -339,7 +391,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div class="chat-sidebar">
                     <div class="chat-sidebar-header">Messages</div>
                     <div class="chat-list">
-                        ${conversations.map(c => `
+                        ${conversations
+                            .map(
+                                c => `
                             <div class="chat-item" data-id="${c.id}">
                                 <img src="${c.otherUser?.avatar_url || 'https://placehold.co/48'}" class="chat-item-avatar" alt="Avatar">
                                 <div class="chat-item-info">
@@ -357,7 +411,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <!-- Badge Notification Placeholder -->
                                 <div id="badge-${c.id}" class="badge-dot" style="display: none;"></div>
                             </div>
-                        `).join('')}
+                        `
+                            )
+                            .join('')}
                     </div>
                 </div>
                 <div id="chat-messages" class="chat-main">
@@ -380,7 +436,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (conversations.length > 0) {
             let targetId = conversations[0].id;
             // Use convIdParam from closure if available and valid
-            if (typeof convIdParam !== 'undefined' && convIdParam && conversations.some(c => c.id === convIdParam)) {
+            if (
+                typeof convIdParam !== 'undefined' &&
+                convIdParam &&
+                conversations.some(c => c.id === convIdParam)
+            ) {
                 targetId = convIdParam;
             }
 
@@ -400,7 +460,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Try to find otherUser from DOM if not passed (e.g. click handler)
         // Fetch conversation details if otherUser is missing (e.g. deep link)
         if (!otherUser) {
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
             const { data: convMembers } = await supabase
                 .from('conversation_members')
                 .select('profiles(full_name, avatar_url, role)')
@@ -417,7 +479,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         chatArea.innerHTML = '<div class="chat-empty">Loading messages...</div>';
 
         const { data: msgs } = await messaging.getMessages(convId);
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         // Mark as Read
         await messaging.markAsRead(convId, user.id);
@@ -434,13 +498,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <!-- Optional: Info Icon or Call Button here -->
             </div>
             <div class="msg-list" id="msg-scroll-area">
-                ${msgs.map(m => `
+                ${msgs
+                    .map(
+                        m => `
                     <div class="msg-bubble ${m.sender_id === user.id ? 'msg-sent' : 'msg-received'}">
                         ${m.body}
                         <!-- Hover time is handled by CSS now -->
                         <div class="msg-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
-                `).join('')}
+                `
+                    )
+                    .join('')}
             </div>
             <div class="chat-input-area">
                 <input type="text" id="msg-input" class="chat-input" placeholder="Type a message...">
@@ -465,7 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         document.getElementById('send-btn').addEventListener('click', handleSend);
-        document.getElementById('msg-input').addEventListener('keypress', (e) => {
+        document.getElementById('msg-input').addEventListener('keypress', e => {
             if (e.key === 'Enter') handleSend();
         });
     }
@@ -476,9 +544,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const modal = document.createElement('div');
         Object.assign(modal.style, {
-            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center',
-            alignItems: 'center', zIndex: '9999', backdropFilter: 'blur(4px)'
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '9999',
+            backdropFilter: 'blur(4px)',
         });
 
         modal.innerHTML = `
@@ -519,7 +595,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.textContent = 'Deleting...';
             btn.disabled = true;
 
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
             await messaging.deleteConversation(conversationId, user.id);
 
             card.style.transform = 'scale(0.95)';
@@ -531,18 +609,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
     };
 
-
     async function loadConnections() {
         const list = document.getElementById('connections-list');
         if (!list) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         const { data: conns } = await connections.getConnections(user.id);
 
         if (!conns || conns.length === 0) {
             list.innerHTML = '<p>No confirmed connections.</p>';
         } else {
-            list.innerHTML = conns.map(p => `<div class="profile-card-mini">${p.full_name}</div>`).join('');
+            list.innerHTML = conns
+                .map(p => `<div class="profile-card-mini">${p.full_name}</div>`)
+                .join('');
         }
     }
 
@@ -550,7 +631,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const list = document.getElementById('requests-list');
         if (!list) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         // Fetch bookings needing approval
         // Role check: Only providers (tutors/counselors) should see this generally, but code handles it via tab visibility.
@@ -569,24 +652,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
         } else {
-            list.innerHTML = reqs.map(r => {
-                const isPending = r.status === 'pending_approval';
+            list.innerHTML = reqs
+                .map(r => {
+                    const isPending = r.status === 'pending_approval';
 
-                let actionsHTML = '';
-                if (isPending) {
-                    actionsHTML = `
+                    let actionsHTML = '';
+                    if (isPending) {
+                        actionsHTML = `
                         <div style="display: flex; gap: 8px;">
                             <button onclick="rejectBooking('${r.id}')" class="btn btn-sm btn-outline">Reject</button>
                             <button onclick="approveBooking('${r.id}')" class="btn btn-primary btn-sm">Approve</button>
                         </div>
                     `;
-                } else {
-                    actionsHTML = `
+                    } else {
+                        actionsHTML = `
                          <div class="status-badge" style="background:#eff6ff; color:#1d4ed8; border: 1px solid #bfdbfe; font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; font-weight: 500;">Awaiting Payment</div>
                     `;
-                }
+                    }
 
-                return `
+                    return `
                 <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px; border: 1px solid #eee; margin-bottom: 12px; border-radius: 8px; background: white;">
                     <div>
                         <div style="font-weight: 600; margin-bottom: 4px;">${r.profiles.full_name}</div>
@@ -597,10 +681,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     ${actionsHTML}
                 </div>
-            `}).join('');
+            `;
+                })
+                .join('');
         }
 
-        window.approveBooking = async (id) => {
+        window.approveBooking = async id => {
             const btn = document.querySelector(`button[onclick="approveBooking('${id}')"]`);
             if (btn) {
                 btn.textContent = 'Approving...';
@@ -610,7 +696,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadRequests(); // Refresh list
         };
 
-        window.rejectBooking = async (id) => {
+        window.rejectBooking = async id => {
             if (!confirm('Are you sure you want to reject this request?')) return;
             const btn = document.querySelector(`button[onclick="rejectBooking('${id}')"]`);
             if (btn) {
@@ -627,7 +713,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list) return;
         list.innerHTML = '<p style="text-align:center; color:#666;">Loading saved profiles...</p>';
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
 
         // 1. Get saved IDs
         const { data: savedItems, error } = await supabase
@@ -654,7 +742,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ids = savedItems.map(i => i.saved_profile_id);
         const { data: profiles } = await supabase
             .from('profiles')
-            .select('*, tutor_profiles(subjects, hourly_rate, rating_avg, rating_count), counselor_profiles(specialties, hourly_rate, rating_avg, rating_count)')
+            .select(
+                '*, tutor_profiles(subjects, hourly_rate, rating_avg, rating_count), counselor_profiles(specialties, hourly_rate, rating_avg, rating_count)'
+            )
             .in('id', ids);
 
         if (!profiles) {
@@ -662,30 +752,35 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        list.innerHTML = profiles.map(p => {
-            // Determine Role Details
-            let details = {};
-            let isProvider = false;
-            let subTextStr = "";
+        list.innerHTML = profiles
+            .map(p => {
+                // Determine Role Details
+                let details = {};
+                let isProvider = false;
+                let subTextStr = '';
 
-            if (p.role === 'tutor' && p.tutor_profiles && p.tutor_profiles.length > 0) {
-                details = p.tutor_profiles[0];
-                isProvider = true;
-                subTextStr = details.subjects ? details.subjects.join(', ') : 'Tutor';
-            } else if (p.role === 'counselor' && p.counselor_profiles && p.counselor_profiles.length > 0) {
-                details = p.counselor_profiles[0];
-                isProvider = true;
-                subTextStr = details.specialties ? details.specialties.join(', ') : 'Counselor';
-            } else {
-                subTextStr = p.role.charAt(0).toUpperCase() + p.role.slice(1);
-            }
+                if (p.role === 'tutor' && p.tutor_profiles && p.tutor_profiles.length > 0) {
+                    details = p.tutor_profiles[0];
+                    isProvider = true;
+                    subTextStr = details.subjects ? details.subjects.join(', ') : 'Tutor';
+                } else if (
+                    p.role === 'counselor' &&
+                    p.counselor_profiles &&
+                    p.counselor_profiles.length > 0
+                ) {
+                    details = p.counselor_profiles[0];
+                    isProvider = true;
+                    subTextStr = details.specialties ? details.specialties.join(', ') : 'Counselor';
+                } else {
+                    subTextStr = p.role.charAt(0).toUpperCase() + p.role.slice(1);
+                }
 
-            const rating = details.rating_avg || 5.0;
-            const reviewCount = details.rating_count || 0;
-            const price = details.hourly_rate ? `$${details.hourly_rate}` : 'Contact';
-            const bioSnippet = p.bio || `Experienced ${p.role} ready to help you succeed.`;
+                const rating = details.rating_avg || 5.0;
+                const reviewCount = details.rating_count || 0;
+                const price = details.hourly_rate ? `$${details.hourly_rate}` : 'Contact';
+                const bioSnippet = p.bio || `Experienced ${p.role} ready to help you succeed.`;
 
-            return `
+                return `
             <div class="saved-user-card" style="display: flex; gap: 24px; padding: 24px; border: 1px solid #E5E7EB; border-radius: 16px; background: white; margin-bottom: 20px; box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.05); transition: transform 0.2s, box-shadow 0.2s;">
                 <!-- Left: Avatar -->
                 <div style="flex-shrink: 0; position: relative;">
@@ -738,7 +833,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                 </div>
             </div>`;
-        }).join('');
+            })
+            .join('');
     }
 
     async function loadProfile() {
@@ -746,7 +842,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!container) return;
         container.innerHTML = 'Loading profile...';
 
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
         if (!user) return;
 
         const { data: profile } = await supabase
@@ -763,13 +861,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Fetch Role Specific Data
         let roleData = {};
         if (profile.role === 'student') {
-            const { data } = await supabase.from('student_profiles').select('*').eq('user_id', user.id).single();
+            const { data } = await supabase
+                .from('student_profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
             roleData = data || {};
         } else if (profile.role === 'tutor') {
-            const { data } = await supabase.from('tutor_profiles').select('*').eq('user_id', user.id).single();
+            const { data } = await supabase
+                .from('tutor_profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
             roleData = data || {};
         } else if (profile.role === 'counselor') {
-            const { data } = await supabase.from('counselor_profiles').select('*').eq('user_id', user.id).single();
+            const { data } = await supabase
+                .from('counselor_profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
             roleData = data || {};
         }
 
@@ -882,10 +992,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                      <div class="profile-section-title" style="margin-top: 24px;">Highlights</div>
                     <div class="form-group">
                          <label>About your Highlights</label>
-                         <textarea id="prof-highlights" class="form-textarea" rows="4" placeholder="Share a brief phrase about your strengths or what makes you unique...">${(profile.highlights && Array.isArray(profile.highlights) && profile.highlights.length > 0)
-                ? (profile.highlights[0].desc || profile.highlights[0].description || '')
-                : ''
-            }</textarea>
+                         <textarea id="prof-highlights" class="form-textarea" rows="4" placeholder="Share a brief phrase about your strengths or what makes you unique...">${
+                             profile.highlights &&
+                             Array.isArray(profile.highlights) &&
+                             profile.highlights.length > 0
+                                 ? profile.highlights[0].desc ||
+                                   profile.highlights[0].description ||
+                                   ''
+                                 : ''
+                         }</textarea>
                          <p style="font-size: 0.8rem; color: #666; margin-top: 4px;">This will be displayed on your profile.</p>
                     </div>
 
@@ -923,19 +1038,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         const hiddenInput = document.getElementById('prof-avatar');
 
         // Styles
-        const highlight = () => { dropZone.style.borderColor = '#007AFF'; dropZone.style.background = '#eff6ff'; };
-        const unhighlight = () => { dropZone.style.borderColor = '#ccc'; dropZone.style.background = '#fafafa'; };
+        const highlight = () => {
+            dropZone.style.borderColor = '#007AFF';
+            dropZone.style.background = '#eff6ff';
+        };
+        const unhighlight = () => {
+            dropZone.style.borderColor = '#ccc';
+            dropZone.style.background = '#fafafa';
+        };
 
         ['dragenter', 'dragover'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); highlight(); }, false);
+            dropZone.addEventListener(
+                eventName,
+                e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    highlight();
+                },
+                false
+            );
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); unhighlight(); }, false);
+            dropZone.addEventListener(
+                eventName,
+                e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    unhighlight();
+                },
+                false
+            );
         });
 
         // Handle Drop
-        dropZone.addEventListener('drop', (e) => {
+        dropZone.addEventListener('drop', e => {
             const dt = e.dataTransfer;
             const files = dt.files;
             handleFiles(files);
@@ -945,7 +1082,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         dropZone.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', () => handleFiles(fileInput.files));
 
-        const handleFiles = async (files) => {
+        const handleFiles = async files => {
             if (files.length === 0) return;
             let file = files[0];
 
@@ -955,20 +1092,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // HEIC Handling
-            if ((file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) && window.heic2any) {
+            if (
+                (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) &&
+                window.heic2any
+            ) {
                 const statusDiv = document.getElementById('upload-status');
                 statusDiv.style.display = 'block';
                 statusDiv.textContent = 'Converting HEIC image...';
                 statusDiv.style.color = '#666';
 
                 try {
-                    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 });
+                    const result = await heic2any({
+                        blob: file,
+                        toType: 'image/jpeg',
+                        quality: 0.8,
+                    });
                     const blob = Array.isArray(result) ? result[0] : result;
-                    file = new File([blob], file.name.replace(/\.heic$/i, ".jpg"), { type: "image/jpeg" });
+                    file = new File([blob], file.name.replace(/\.heic$/i, '.jpg'), {
+                        type: 'image/jpeg',
+                    });
                     statusDiv.style.display = 'none';
                 } catch (e) {
-                    console.error("HEIC conversion failed", e);
-                    alert("Could not convert HEIC. Please convert to JPG/PNG manually.");
+                    console.error('HEIC conversion failed', e);
+                    alert('Could not convert HEIC. Please convert to JPG/PNG manually.');
                     return;
                 }
             }
@@ -979,8 +1125,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const modal = document.createElement('div');
                 modal.id = 'cropper-modal';
                 Object.assign(modal.style, {
-                    position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-                    background: 'rgba(0,0,0,0.85)', display: 'none', justifyContent: 'center', alignItems: 'center', zIndex: '10000'
+                    position: 'fixed',
+                    top: '0',
+                    left: '0',
+                    width: '100%',
+                    height: '100%',
+                    background: 'rgba(0,0,0,0.85)',
+                    display: 'none',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    zIndex: '10000',
                 });
                 modal.innerHTML = `
                     <div style="background: white; padding: 24px; border-radius: 12px; width: 500px; max-width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
@@ -1010,7 +1164,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             modal.style.display = 'flex';
 
             const reader = new FileReader();
-            reader.onload = (evt) => {
+            reader.onload = evt => {
                 // Ensure image is loaded before creating cropper
                 img.onload = () => {
                     if (window.cropper) window.cropper.destroy();
@@ -1029,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         ready() {
                             // Extra check to ensure layout is updated
                             this.cropper.crop();
-                        }
+                        },
                     });
                 };
                 img.src = evt.target.result;
@@ -1045,60 +1199,71 @@ document.addEventListener('DOMContentLoaded', async () => {
                 btn.textContent = 'Saving...';
                 btn.disabled = true;
 
-                window.cropper.getCroppedCanvas({
-                    width: 400,
-                    height: 400,
-                    imageSmoothingQuality: 'high'
-                }).toBlob(async (blob) => {
-                    try {
-                        const fileExt = file.name.split('.').pop() || 'jpg';
-                        const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+                window.cropper
+                    .getCroppedCanvas({
+                        width: 400,
+                        height: 400,
+                        imageSmoothingQuality: 'high',
+                    })
+                    .toBlob(async blob => {
+                        try {
+                            const fileExt = file.name.split('.').pop() || 'jpg';
+                            const fileName = `${user.id}-${Date.now()}.${fileExt}`;
 
-                        // Upload
-                        const { error: uploadError } = await supabase.storage
-                            .from('avatars')
-                            .upload(fileName, blob, { contentType: file.type, upsert: true });
+                            // Upload
+                            const { error: uploadError } = await supabase.storage
+                                .from('avatars')
+                                .upload(fileName, blob, { contentType: file.type, upsert: true });
 
-                        if (uploadError) throw uploadError;
+                            if (uploadError) throw uploadError;
 
-                        const { data: { publicUrl } } = supabase.storage
-                            .from('avatars')
-                            .getPublicUrl(fileName);
+                            const {
+                                data: { publicUrl },
+                            } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
-                        // Update UI & Database
-                        previewImg.src = publicUrl;
-                        hiddenInput.value = publicUrl;
+                            // Update UI & Database
+                            previewImg.src = publicUrl;
+                            hiddenInput.value = publicUrl;
 
-                        // Update Profile in DB immediately
-                        await supabase.from('profiles').update({ avatar_url: publicUrl }).eq('id', user.id);
+                            // Update Profile in DB immediately
+                            await supabase
+                                .from('profiles')
+                                .update({ avatar_url: publicUrl })
+                                .eq('id', user.id);
 
-                        statusDiv.style.display = 'block';
-                        statusDiv.textContent = 'Upload complete!';
-                        statusDiv.style.color = '#10B981';
+                            statusDiv.style.display = 'block';
+                            statusDiv.textContent = 'Upload complete!';
+                            statusDiv.style.color = '#10B981';
 
-                        modal.style.display = 'none';
-                        if (window.cropper) window.cropper.destroy();
+                            modal.style.display = 'none';
+                            if (window.cropper) window.cropper.destroy();
 
-                        // Show Success Toast
-                        const toast = document.createElement('div');
-                        toast.textContent = 'Profile picture updated successfully!';
-                        Object.assign(toast.style, {
-                            position: 'fixed', bottom: '24px', right: '24px', padding: '12px 24px',
-                            background: '#10B981', color: 'white', borderRadius: '8px', zIndex: '10001', boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
-                        });
-                        document.body.appendChild(toast);
-                        setTimeout(() => toast.remove(), 3000);
-
-                    } catch (err) {
-                        console.error(err);
-                        alert('Error uploading image: ' + err.message);
-                        statusDiv.textContent = 'Upload failed.';
-                        statusDiv.style.color = 'red';
-                    } finally {
-                        btn.textContent = origText;
-                        btn.disabled = false;
-                    }
-                }, file.type);
+                            // Show Success Toast
+                            const toast = document.createElement('div');
+                            toast.textContent = 'Profile picture updated successfully!';
+                            Object.assign(toast.style, {
+                                position: 'fixed',
+                                bottom: '24px',
+                                right: '24px',
+                                padding: '12px 24px',
+                                background: '#10B981',
+                                color: 'white',
+                                borderRadius: '8px',
+                                zIndex: '10001',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                            });
+                            document.body.appendChild(toast);
+                            setTimeout(() => toast.remove(), 3000);
+                        } catch (err) {
+                            console.error(err);
+                            alert('Error uploading image: ' + err.message);
+                            statusDiv.textContent = 'Upload failed.';
+                            statusDiv.style.color = 'red';
+                        } finally {
+                            btn.textContent = origText;
+                            btn.disabled = false;
+                        }
+                    }, file.type);
             };
         };
 
@@ -1129,15 +1294,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 if (uploadError) throw uploadError;
 
-                const { data: { publicUrl } } = supabase.storage
-                    .from('videos')
-                    .getPublicUrl(fileName);
+                const {
+                    data: { publicUrl },
+                } = supabase.storage.from('videos').getPublicUrl(fileName);
 
                 vStatusDiv.textContent = 'Video Upload complete!';
                 vStatusDiv.style.color = 'green';
                 vFileName.textContent = file.name;
                 vHiddenInput.value = publicUrl;
-
             } catch (error) {
                 console.error('Video Upload Error:', error);
                 vStatusDiv.textContent = 'Upload failed: ' + error.message;
@@ -1145,9 +1309,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
-
         const form = document.getElementById('profile-form');
-        form.addEventListener('submit', async (e) => {
+        form.addEventListener('submit', async e => {
             e.preventDefault();
             const btn = document.getElementById('btn-save-profile');
             const msg = document.getElementById('profile-msg');
@@ -1167,7 +1330,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 linkedin: document.getElementById('prof-linkedin').value || null,
                 updated_at: new Date().toISOString(),
                 introduction_video_url: document.getElementById('prof-video').value || null,
-                highlights: [{ title: 'Highlights', desc: document.getElementById('prof-highlights').value || '' }]
+                highlights: [
+                    {
+                        title: 'Highlights',
+                        desc: document.getElementById('prof-highlights').value || '',
+                    },
+                ],
             };
 
             const { error: baseError } = await supabase
@@ -1187,24 +1355,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             let roleError = null;
             if (profile.role === 'student') {
                 const grade = document.getElementById('prof-grade').value;
-                const interests = document.getElementById('prof-interests').value.split(',').map(s => s.trim()).filter(Boolean);
+                const interests = document
+                    .getElementById('prof-interests')
+                    .value.split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
 
                 const { error } = await supabase.from('student_profiles').upsert({
                     user_id: user.id,
                     grade_level: grade,
-                    academic_interests: interests
+                    academic_interests: interests,
                 });
                 roleError = error;
             } else if (profile.role === 'tutor' || profile.role === 'counselor') {
                 const rate = document.getElementById('prof-rate').value;
                 const exp = document.getElementById('prof-experience').value;
-                const subs = document.getElementById('prof-subjects').value.split(',').map(s => s.trim()).filter(Boolean);
+                const subs = document
+                    .getElementById('prof-subjects')
+                    .value.split(',')
+                    .map(s => s.trim())
+                    .filter(Boolean);
 
                 const table = profile.role === 'tutor' ? 'tutor_profiles' : 'counselor_profiles';
                 const payload = {
                     user_id: user.id,
                     hourly_rate: rate ? parseFloat(rate) : null,
-                    years_experience: exp ? parseInt(exp) : 0
+                    years_experience: exp ? parseInt(exp) : 0,
                 };
                 if (profile.role === 'tutor') payload.subjects = subs;
                 else payload.specialization = subs;
@@ -1223,11 +1399,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 showMsg('Profile updated successfully!', 'green');
                 // Update header name specific to DOM
                 const nameEl = document.getElementById('user-name');
-                if (nameEl) nameEl.textContent = `Welcome back, ${baseUpdates.full_name.split(' ')[0]} `;
+                if (nameEl)
+                    nameEl.textContent = `Welcome back, ${baseUpdates.full_name.split(' ')[0]} `;
 
                 // Update avatar preview
                 const previewImg = document.getElementById('avatar-preview-img');
-                if (previewImg) previewImg.src = baseUpdates.avatar_url || 'https://placehold.co/100';
+                if (previewImg)
+                    previewImg.src = baseUpdates.avatar_url || 'https://placehold.co/100';
             }
 
             function showMsg(text, color) {
@@ -1237,8 +1415,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
     }
-
-
 
     // --- Calendar Availability Logic ---
     const calContainer = document.querySelector('.calendar-grid-container');
@@ -1280,8 +1456,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             // Update Range Label
-            const startStr = weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            const endStr = weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const startStr = weekDates[0].toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+            });
+            const endStr = weekDates[6].toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+            });
             rangeLabel.textContent = `${startStr} - ${endStr}, ${weekDates[6].getFullYear()} `;
 
             // 2. Render Body (Time Rows)
@@ -1322,12 +1504,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         };
 
         const loadSlots = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
             const start = new Date(currentDate);
             const end = new Date(currentDate);
             end.setDate(end.getDate() + 7);
 
-            const { data, error } = await booking.getSlotsForRange(user.id, start.toISOString(), end.toISOString());
+            const { data, error } = await booking.getSlotsForRange(
+                user.id,
+                start.toISOString(),
+                end.toISOString()
+            );
 
             if (data) {
                 activeSlots.clear();
@@ -1410,7 +1598,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             btn.textContent = 'Saving...';
             btn.disabled = true;
 
-            const { data: { user } } = await supabase.auth.getUser();
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
 
             // Build Payload
             // We need to send array of objects { start_time, end_time }
@@ -1466,7 +1656,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const activeTabBtn = document.querySelector('.tab-btn.active');
         if (activeTabBtn) {
             // Trigger load function for the default active tab
-            if (activeTabBtn.dataset.tab === 'upcoming' || activeTabBtn.dataset.tab === 'bookings') loadBookings();
+            if (activeTabBtn.dataset.tab === 'upcoming' || activeTabBtn.dataset.tab === 'bookings')
+                loadBookings();
             if (activeTabBtn.dataset.tab === 'messages') loadConversations();
             if (activeTabBtn.dataset.tab === 'connections') loadConnections();
             if (activeTabBtn.dataset.tab === 'requests') loadRequests();
@@ -1502,7 +1693,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // --- Global Actions (Message & Cancel) ---
 
     // 1. Message Provider/Student
-    window.openMsg = async (targetUserId) => {
+    window.openMsg = async targetUserId => {
         // Switch to message tab
         const msgTab = document.querySelector('.tab-btn[data-tab="messages"]');
         if (msgTab) msgTab.click();
@@ -1511,7 +1702,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentUser = (await supabase.auth.getUser()).data.user;
         if (!currentUser) return;
 
-        const { data: conv, error } = await messaging.startConversation(currentUser.id, targetUserId);
+        const { data: conv, error } = await messaging.startConversation(
+            currentUser.id,
+            targetUserId
+        );
 
         if (conv) {
             // We need to wait for the UI to load (loadConversations is async and triggered by click)
@@ -1523,7 +1717,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 else {
                     // If list didn't load it yet (new conv), force reload
                     loadConversations().then(() => {
-                        const newItem = document.querySelector(`.chat - item[data - id="${conv.id}"]`);
+                        const newItem = document.querySelector(
+                            `.chat - item[data - id="${conv.id}"]`
+                        );
                         if (newItem) newItem.click();
                     });
                 }
@@ -1552,7 +1748,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     let bookingToCancel = null;
 
-    window.confirmCancel = (bookingId) => {
+    window.confirmCancel = bookingId => {
         bookingToCancel = bookingId;
         document.getElementById('cancel-modal').classList.add('active');
     };
@@ -1583,5 +1779,4 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadBookings(); // Refresh list
         }
     });
-
 });

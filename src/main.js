@@ -5,6 +5,7 @@ import { messaging } from './lib/messaging.js';
 import { email } from './lib/email.js';
 import { initLayout } from './components/layout.js';
 import { initParallax } from './components/parallax.js';
+import { logger } from './lib/logger.js';
 
 // Initialize App
 (async function initApp() {
@@ -20,7 +21,12 @@ import { initParallax } from './components/parallax.js';
     if (path.includes('counselors.html')) renderBrowsingPage('counselor');
     if (path.includes('buddies.html')) renderBrowsingPage('buddy');
 
-    const protectedRoutes = ['/booking.html', '/dashboard-student.html', '/dashboard-tutor.html', '/counselor-dashboard.html'];
+    const protectedRoutes = [
+        '/booking.html',
+        '/dashboard-student.html',
+        '/dashboard-tutor.html',
+        '/counselor-dashboard.html',
+    ];
     if (!user && protectedRoutes.some(r => path.includes(r))) {
         window.location.href = '/src/auth.html'; // Redirect to login
         return;
@@ -39,7 +45,7 @@ import { initParallax } from './components/parallax.js';
 
         let dashboardLink = '/onboarding.html';
         if (profile) {
-            console.log('User Profile:', profile);
+            logger.debug('User Profile:', profile);
             if (profile.role === 'student') dashboardLink = '/dashboard-student.html';
             else if (profile.role === 'tutor') dashboardLink = '/dashboard-tutor.html';
             else if (profile.role === 'counselor') dashboardLink = '/counselor-dashboard.html';
@@ -76,20 +82,82 @@ import { initParallax } from './components/parallax.js';
                 if (ctaSection) {
                     // 10 Unique Testimonials
                     const testimonials = [
-                        { text: "James helped me boost my Math AA grade from a 4 to a 7 in just two months!", author: "Sarah Jenkins", role: "IB Student • 43/45", initial: "S", flag: "🇺🇸" },
-                        { text: "My university counselor was a lifesaver. Got into my dream UK uni!", author: "Michael Chen", role: "Accepted to UCL", initial: "M", flag: "🇬🇧" },
-                        { text: "Finding a study buddy for HL Physics made revision much less lonely.", author: "Elena Rodriguez", role: "IB Student • Madrid", initial: "E", flag: "🇪🇸" },
-                        { text: "The dashboard makes managing lessons easy. I can focus on teaching.", author: "David Kim", role: "Chemistry Tutor", initial: "D", flag: "🇰🇷" },
-                        { text: "Finally understood Electric Fields thanks to my tutor. Huge relief.", author: "Jessica Wu", role: "Physics HL Student", initial: "J", flag: "🇸🇬" },
-                        { text: "The essay structure tips for English A were gold. Recommended!", author: "Thomas Müller", role: "IB Student • Berlin", initial: "T", flag: "🇩🇪" },
-                        { text: "Bio HL notes I shared got me connected with great study partners.", author: "Aisha Khan", role: "Biology HL", initial: "A", flag: "🇮🇳" },
-                        { text: "Real-world Econ examples helped me ace my IA. Thanks!", author: "Lucas Silva", role: "Economics SL", initial: "L", flag: "🇧🇷" },
-                        { text: "Super simple booking process. No back-and-forth emails.", author: "Ryan O'Connell", role: "Business Mgmt Tutor", initial: "R", flag: "🇮🇪" },
-                        { text: "This platform is exactly what I wish I had in DP1. Amazing.", author: "Sophie Dubois", role: "IB Alumni • 44 Points", initial: "S", flag: "🇫🇷" }
+                        {
+                            text: 'James helped me boost my Math AA grade from a 4 to a 7 in just two months!',
+                            author: 'Sarah Jenkins',
+                            role: 'IB Student • 43/45',
+                            initial: 'S',
+                            flag: '🇺🇸',
+                        },
+                        {
+                            text: 'My university counselor was a lifesaver. Got into my dream UK uni!',
+                            author: 'Michael Chen',
+                            role: 'Accepted to UCL',
+                            initial: 'M',
+                            flag: '🇬🇧',
+                        },
+                        {
+                            text: 'Finding a study buddy for HL Physics made revision much less lonely.',
+                            author: 'Elena Rodriguez',
+                            role: 'IB Student • Madrid',
+                            initial: 'E',
+                            flag: '🇪🇸',
+                        },
+                        {
+                            text: 'The dashboard makes managing lessons easy. I can focus on teaching.',
+                            author: 'David Kim',
+                            role: 'Chemistry Tutor',
+                            initial: 'D',
+                            flag: '🇰🇷',
+                        },
+                        {
+                            text: 'Finally understood Electric Fields thanks to my tutor. Huge relief.',
+                            author: 'Jessica Wu',
+                            role: 'Physics HL Student',
+                            initial: 'J',
+                            flag: '🇸🇬',
+                        },
+                        {
+                            text: 'The essay structure tips for English A were gold. Recommended!',
+                            author: 'Thomas Müller',
+                            role: 'IB Student • Berlin',
+                            initial: 'T',
+                            flag: '🇩🇪',
+                        },
+                        {
+                            text: 'Bio HL notes I shared got me connected with great study partners.',
+                            author: 'Aisha Khan',
+                            role: 'Biology HL',
+                            initial: 'A',
+                            flag: '🇮🇳',
+                        },
+                        {
+                            text: 'Real-world Econ examples helped me ace my IA. Thanks!',
+                            author: 'Lucas Silva',
+                            role: 'Economics SL',
+                            initial: 'L',
+                            flag: '🇧🇷',
+                        },
+                        {
+                            text: 'Super simple booking process. No back-and-forth emails.',
+                            author: "Ryan O'Connell",
+                            role: 'Business Mgmt Tutor',
+                            initial: 'R',
+                            flag: '🇮🇪',
+                        },
+                        {
+                            text: 'This platform is exactly what I wish I had in DP1. Amazing.',
+                            author: 'Sophie Dubois',
+                            role: 'IB Alumni • 44 Points',
+                            initial: 'S',
+                            flag: '🇫🇷',
+                        },
                     ];
 
                     // Generate Cards HTML (Duplicate array for seamless infinite scroll)
-                    const cardsHtml = [...testimonials, ...testimonials].map(t => `
+                    const cardsHtml = [...testimonials, ...testimonials]
+                        .map(
+                            t => `
                         <div class="testimonial-card" style="position: relative;">
                             <div class="t-rating">★★★★★</div>
                             <p class="t-text">"${t.text}"</p>
@@ -104,7 +172,9 @@ import { initParallax } from './components/parallax.js';
                                 ${t.flag}
                             </div>
                         </div>
-                    `).join('');
+                    `
+                        )
+                        .join('');
 
                     ctaSection.innerHTML = `
                         <div class="container fade-in-up visible">
@@ -172,7 +242,7 @@ import { initParallax } from './components/parallax.js';
         };
 
         // Search Handler
-        const handleSearch = async (e) => {
+        const handleSearch = async e => {
             const query = e.target.value.trim();
 
             if (query.length < 2) {
@@ -215,14 +285,15 @@ import { initParallax } from './components/parallax.js';
                 });
             } else {
                 dropdown.style.display = 'block';
-                dropdown.innerHTML = '<div style="padding: 12px; text-align: center; color: #666; font-size: 0.9rem;">No results found.</div>';
+                dropdown.innerHTML =
+                    '<div style="padding: 12px; text-align: center; color: #666; font-size: 0.9rem;">No results found.</div>';
             }
         };
 
         searchInput.addEventListener('input', debounce(handleSearch, 300));
 
         // Close on outside click
-        document.addEventListener('click', (e) => {
+        document.addEventListener('click', e => {
             if (!wrapper.contains(e.target)) {
                 dropdown.style.display = 'none';
             }
@@ -245,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const targetElement = document.querySelector(targetId);
             if (targetElement) {
                 targetElement.scrollIntoView({
-                    behavior: 'smooth'
+                    behavior: 'smooth',
                 });
             }
         });
@@ -255,7 +326,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const observerOptions = {
         root: null,
         rootMargin: '0px',
-        threshold: 0.1
+        threshold: 0.1,
     };
 
     const observer = new IntersectionObserver((entries, observer) => {
@@ -275,7 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const successMsg = document.querySelector('.form-success');
 
     if (form) {
-        form.addEventListener('submit', (e) => {
+        form.addEventListener('submit', e => {
             e.preventDefault();
             const email = form.querySelector('input[type="email"]').value;
 
@@ -340,12 +411,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const href = link.getAttribute('href');
 
             // Only intercept internal links
-            if (href &&
+            if (
+                href &&
                 !href.startsWith('#') &&
                 !href.startsWith('mailto:') &&
                 !href.startsWith('tel:') &&
-                link.target !== '_blank') {
-
+                link.target !== '_blank'
+            ) {
                 e.preventDefault();
                 // Just a subtle delay before switching
                 setTimeout(() => {
@@ -384,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.goToStep = async function (stepNumber) {
         // Hide all steps
-        steps.forEach(s => s.style.display = 'none');
+        steps.forEach(s => (s.style.display = 'none'));
         // Show target step
         document.getElementById(`step-${stepNumber}`).style.display = 'block';
 
@@ -473,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnToStep2 = document.getElementById('btn-to-step-2');
     if (btnToStep2) {
         const formDetails = document.getElementById('booking-form-details');
-        formDetails.addEventListener('submit', (e) => {
+        formDetails.addEventListener('submit', e => {
             e.preventDefault();
             // Simple validation is handled by 'required' attributes
             goToStep(2);
@@ -513,14 +585,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.allSlots = slots; // Store for validaton
             } catch (err) {
                 console.error('Error fetching slots:', err);
-                calendarContainer.innerHTML = '<p class="text-center text-danger">Unable to load time slots. Please try again later.</p>';
+                calendarContainer.innerHTML =
+                    '<p class="text-center text-danger">Unable to load time slots. Please try again later.</p>';
                 return;
             }
         }
 
         // If no API or no slots, show empty state or fallback
         if (slots.length === 0) {
-            calendarContainer.innerHTML = '<p class="text-center">No available slots found for this provider.</p>';
+            calendarContainer.innerHTML =
+                '<p class="text-center">No available slots found for this provider.</p>';
             return;
         }
 
@@ -533,13 +607,27 @@ document.addEventListener('DOMContentLoaded', () => {
             grouped[dateKey].push(slot);
         });
 
-        let html = '<div class="calendar-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px;">';
+        let html =
+            '<div class="calendar-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px;">';
 
         Object.keys(grouped).forEach(dateKey => {
             const daySlots = grouped[dateKey];
             const dateObj = new Date(daySlots[0].start_time);
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const months = [
+                'Jan',
+                'Feb',
+                'Mar',
+                'Apr',
+                'May',
+                'Jun',
+                'Jul',
+                'Aug',
+                'Sep',
+                'Oct',
+                'Nov',
+                'Dec',
+            ];
 
             const dayName = days[dateObj.getDay()];
             const monthName = months[dateObj.getMonth()];
@@ -548,7 +636,10 @@ document.addEventListener('DOMContentLoaded', () => {
             let buttonsHtml = '';
             daySlots.forEach(slot => {
                 const start = new Date(slot.start_time);
-                const timeStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const timeStr = start.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                });
                 // We pass the raw slot ID and the ISO time
                 buttonsHtml += `<button type="button" class="btn-slot" data-id="${slot.id}" data-time="${slot.start_time}" onclick="selectSlot(this, '${dayName}, ${monthName} ${dayNum}', '${timeStr}', '${slot.id}', '${slot.start_time}')">${timeStr}</button>`;
             });
@@ -579,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.head.appendChild(style);
 
         calendarContainer.innerHTML = html;
-        calendarContainer.dataset.rendered = "true";
+        calendarContainer.dataset.rendered = 'true';
     }
 
     // Slot Selection Handler
@@ -592,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const duration = parseInt(durationSelect ? durationSelect.value : 60); // min
 
         // 3. Find Required Slots
-        // Slots are now 30 minutes. 
+        // Slots are now 30 minutes.
         // 30 mins -> 1 slot
         // 60 mins -> 2 slots
         // 90 mins -> 3 slots
@@ -632,7 +723,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (!valid) {
-            alert(`Unable to book ${duration} minutes starting at ${timeStr}. Not enough consecutive slots available.`);
+            alert(
+                `Unable to book ${duration} minutes starting at ${timeStr}. Not enough consecutive slots available.`
+            );
             return;
         }
 
@@ -690,7 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
              `;
 
             detailsContainer.innerHTML = summaryHTML;
-        })
+        });
     }
 
     // 5. Submit Booking
@@ -712,10 +805,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     student_id: user?.id,
                     provider_id: providerId,
                     scheduled_start: window.selectedIsoDate || new Date().toISOString(),
-                    scheduled_end: calculateEndTime(window.selectedIsoDate, window.selectedDuration || 60),
-                    price: window.selectedPrice ? parseFloat(window.selectedPrice) : 60.00,
+                    scheduled_end: calculateEndTime(
+                        window.selectedIsoDate,
+                        window.selectedDuration || 60
+                    ),
+                    price: window.selectedPrice ? parseFloat(window.selectedPrice) : 60.0,
                     notes: formData.get('notes'),
-                    slot_ids: window.selectedSlotIds // Pass all selected slots
+                    slot_ids: window.selectedSlotIds, // Pass all selected slots
                 };
 
                 const { error: bookingError } = await bookingLib.createBooking(bookingDetails);
@@ -740,7 +836,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 goToStep(4);
-
             } catch (err) {
                 console.error(err);
                 alert(`Error: ${err.message}`);
@@ -756,5 +851,4 @@ document.addEventListener('DOMContentLoaded', () => {
         date.setMinutes(date.getMinutes() + parseInt(durationMinutes || 60));
         return date.toISOString();
     }
-
 });

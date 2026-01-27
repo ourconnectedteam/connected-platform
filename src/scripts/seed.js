@@ -25,8 +25,8 @@ const mockUsers = [
             bio: 'Oxford math graduate with 5 years experience.',
             hourly_rate: 55,
             subjects: ['Math AA', 'Physics'],
-            verified: true
-        }
+            verified: true,
+        },
     },
     {
         email: 'maria@connected.com',
@@ -37,8 +37,8 @@ const mockUsers = [
             bio: 'Ex-Harvard admissions officer.',
             hourly_rate: 120,
             specialties: ['US Admissions', 'Ivy League'],
-            verified: true
-        }
+            verified: true,
+        },
     },
     {
         email: 'alex@student.com',
@@ -48,9 +48,9 @@ const mockUsers = [
             role: 'student',
             bio: 'IB Year 2 student looking for study group.',
             ib_status: 'year2',
-            ib_subjects: ['Math AA', 'Physics HL', 'Econ HL']
-        }
-    }
+            ib_subjects: ['Math AA', 'Physics HL', 'Econ HL'],
+        },
+    },
 ];
 
 async function seed() {
@@ -61,7 +61,7 @@ async function seed() {
         const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
             email: user.email,
             password: user.password,
-            email_confirm: true
+            email_confirm: true,
         });
 
         if (authError) {
@@ -79,7 +79,9 @@ async function seed() {
                 userId = found.id;
                 console.log(`Found existing user: ${user.email} (${userId})`);
             } else {
-                console.error(`Could not find user ${user.email} in listUsers even though creation failed.`);
+                console.error(
+                    `Could not find user ${user.email} in listUsers even though creation failed.`
+                );
                 continue; // Cannot proceed if user is not found
             }
         } else {
@@ -98,7 +100,7 @@ async function seed() {
             full_name: user.profile.full_name,
             role: user.profile.role,
             bio: user.profile.bio,
-            verified: user.profile.verified || false
+            verified: user.profile.verified || false,
         });
 
         if (profileError) console.error('Error creating profile:', profileError);
@@ -108,7 +110,7 @@ async function seed() {
             await supabase.from('tutor_profiles').insert({
                 user_id: userId,
                 hourly_rate: user.profile.hourly_rate,
-                subjects: user.profile.subjects
+                subjects: user.profile.subjects,
             });
 
             // Add Availability Slots (Next 7 days)
@@ -118,30 +120,33 @@ async function seed() {
                 const date = new Date(today);
                 date.setDate(today.getDate() + i);
                 // 10 AM
-                const start1 = new Date(date); start1.setHours(10, 0, 0, 0);
-                const end1 = new Date(date); end1.setHours(11, 0, 0, 0);
+                const start1 = new Date(date);
+                start1.setHours(10, 0, 0, 0);
+                const end1 = new Date(date);
+                end1.setHours(11, 0, 0, 0);
 
                 // 2 PM
-                const start2 = new Date(date); start2.setHours(14, 0, 0, 0);
-                const end2 = new Date(date); end2.setHours(15, 0, 0, 0);
+                const start2 = new Date(date);
+                start2.setHours(14, 0, 0, 0);
+                const end2 = new Date(date);
+                end2.setHours(15, 0, 0, 0);
 
                 slots.push({ provider_id: userId, start_time: start1, end_time: end1 });
                 slots.push({ provider_id: userId, start_time: start2, end_time: end2 });
             }
             await supabase.from('availability_slots').insert(slots);
-
         } else if (user.profile.role === 'counselor') {
             await supabase.from('counselor_profiles').insert({
                 user_id: userId,
                 hourly_rate: user.profile.hourly_rate,
-                specialties: user.profile.specialties
+                specialties: user.profile.specialties,
             });
             // Add similar slots if needed
         } else if (user.profile.role === 'student') {
             await supabase.from('student_profiles').insert({
                 user_id: userId,
                 ib_status: user.profile.ib_status,
-                ib_subjects: user.profile.ib_subjects
+                ib_subjects: user.profile.ib_subjects,
             });
         }
     }

@@ -25,7 +25,7 @@ export const booking = {
         endDate.setDate(today.getDate() + 28); // 4 weeks
 
         // Helper to parse time string "09:00" -> {h, m}
-        const parseTime = (str) => {
+        const parseTime = str => {
             const [h, m] = str.split(':').map(Number);
             return { h, m };
         };
@@ -59,7 +59,7 @@ export const booking = {
                                 provider_id: providerId,
                                 start_time: slotStart.toISOString(),
                                 end_time: slotEnd.toISOString(),
-                                is_booked: false
+                                is_booked: false,
                             });
                         }
                         temp = slotEnd;
@@ -72,7 +72,8 @@ export const booking = {
         if (slots.length > 0) {
             // First, clear existing future unbooked slots to avoid duplicates?
             // Real app: careful sync. Demo: Clear all unbooked future slots for this provider
-            await supabase.from('availability_slots')
+            await supabase
+                .from('availability_slots')
                 .delete()
                 .eq('provider_id', providerId)
                 .eq('is_booked', false)
@@ -98,22 +99,24 @@ export const booking = {
         const slotIds = details.slot_ids || (details.slot_id ? [details.slot_id] : []);
 
         if (slotIds.length > 0) {
-            await supabase.from('availability_slots')
-                .update({ is_booked: true })
-                .in('id', slotIds);
+            await supabase.from('availability_slots').update({ is_booked: true }).in('id', slotIds);
         }
 
         // 2. Create Booking Record
         // Status: 'pending_approval' (Wait for tutor) -> 'approved_pending_payment' (Wait for student) -> 'confirmed'
-        const { data, error } = await supabase.from('bookings').insert({
-            student_id: details.student_id,
-            provider_id: details.provider_id,
-            status: 'pending_approval',
-            scheduled_start: details.scheduled_start,
-            scheduled_end: details.scheduled_end,
-            price_total: details.price,
-            notes: details.notes
-        }).select().single();
+        const { data, error } = await supabase
+            .from('bookings')
+            .insert({
+                student_id: details.student_id,
+                provider_id: details.provider_id,
+                status: 'pending_approval',
+                scheduled_start: details.scheduled_start,
+                scheduled_end: details.scheduled_end,
+                price_total: details.price,
+                notes: details.notes,
+            })
+            .select()
+            .single();
 
         return { data, error };
     },
@@ -187,7 +190,9 @@ export const booking = {
     async initStripe() {
         if (this.stripe) return this.stripe;
         // REPLACE WITH YOUR PUBLISHABLE KEY
-        this.stripe = await Stripe('pk_test_51SpXtuRyje2bzRMJQsYZUcCo5zWLxfxc3AzWXr1vjUKilaJd3EnXpogRHHK3EFdzqP8ngcngAne2ZlLjrqbxSOx100MUujp74A');
+        this.stripe = await Stripe(
+            'pk_test_51SpXtuRyje2bzRMJQsYZUcCo5zWLxfxc3AzWXr1vjUKilaJd3EnXpogRHHK3EFdzqP8ngcngAne2ZlLjrqbxSOx100MUujp74A'
+        );
         return this.stripe;
     },
 
@@ -214,7 +219,11 @@ export const booking = {
         // activeSlots: Array of { start_time, end_time } that MUST exist
 
         // 1. Fetch current existing slots in this range
-        const { data: existing, error: fetchError } = await this.getSlotsForRange(providerId, startTime, endTime);
+        const { data: existing, error: fetchError } = await this.getSlotsForRange(
+            providerId,
+            startTime,
+            endTime
+        );
         if (fetchError) return { error: fetchError };
 
         // 2. Identify Deltas
@@ -237,7 +246,7 @@ export const booking = {
                 provider_id: providerId,
                 start_time: s.start_time,
                 end_time: s.end_time,
-                is_booked: false
+                is_booked: false,
             }));
 
         // Execute
@@ -269,20 +278,13 @@ export const booking = {
     // Submit Review
     async submitReview(reviewData) {
         // reviewData: { booking_id, reviewer_id, reviewee_id, rating, comment }
-        const { data, error } = await supabase
-            .from('reviews')
-            .insert(reviewData)
-            .select()
-            .single();
+        const { data, error } = await supabase.from('reviews').insert(reviewData).select().single();
         return { data, error };
     },
 
     // Delete Booking (Cleanup/Trash)
     async deleteBooking(bookingId) {
-        const { error } = await supabase
-            .from('bookings')
-            .delete()
-            .eq('id', bookingId);
+        const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
         return { error };
-    }
+    },
 };
