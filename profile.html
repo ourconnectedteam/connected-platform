@@ -476,21 +476,21 @@
                 <div class="booking-stats" style="display: flex; justify-content: space-between; align-items: center;">
                     <!-- Ensure flex -->
                     <div style="flex: 1; text-align: center;"> <!-- Added flex: 1 for even splitting -->
-                        <div class="big-stat"
+                        <div class="big-stat" id="p-rating"
                             style="display: flex; align-items: center; justify-content: center; gap: 6px;">
                             <svg class="rating-star" viewBox="0 0 24 24" fill="currentColor">
                                 <polygon
                                     points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
                                 </polygon>
                             </svg>
-                            5.0
+                            —
                         </div>
-                        <div class="stat-label">9 reviews</div>
+                        <div class="stat-label" id="p-review-count">Loading...</div>
                     </div>
                     <!-- Vertical Divider -->
                     <div style="width: 1px; height: 32px; background: #E5E7EB;"></div>
                     <div style="flex: 1; text-align: center;"> <!-- Added flex: 1 for even splitting -->
-                        <div class="big-stat" id="p-lessons-count">100+</div>
+                        <div class="big-stat" id="p-lessons-count">—</div>
                         <div class="stat-label">Lessons</div>
                     </div>
                     <!-- Vertical Divider -->
@@ -548,16 +548,14 @@
                     </svg>
                     Popular
                 </div>
-                <p style="font-size: 0.9rem; color: #666; line-height: 1.4;" id="p-popular-text">
-                    2 new contacts and 9 lesson bookings in the last 48 hours.
-                </p>
+                <p style="font-size: 0.9rem; color: #666; line-height: 1.4;" id="p-popular-text">Loading...</p>
                 <div
                     style="margin-top: 12px; font-size: 0.9rem; color: #666; display: flex; align-items: center; gap: 8px;">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
                         <polyline points="12 6 12 12 16 14"></polyline>
                     </svg>
-                    Usually responds in 1 hour
+                    <span id="p-response-time">—</span>
                 </div>
             </div>
 
@@ -568,6 +566,7 @@
     <script type="module">
         import { supabase } from '/src/lib/supabase.js';
         import { messaging } from '/src/lib/messaging.js';
+        import { getProfileStats } from '/src/lib/profileStats.js';
 
         let currentProfileId = null;
 
@@ -616,7 +615,7 @@
             }
         }
 
-        function renderProfile(user, details, isSaved) {
+        async function renderProfile(user, details, isSaved) {
             document.getElementById('loading').style.display = 'none';
             document.getElementById('profile-container').style.display = 'grid'; // Layout trigger
 
@@ -687,21 +686,18 @@
             const rate = details.hourly_rate ? `$${details.hourly_rate}` : 'Contact';
             document.getElementById('p-rate').textContent = rate;
 
+
+            // Fetch and render profile stats
+            const stats = await getProfileStats(user.id, user.role);
+            renderProfileStats(stats, user.role);
+
             // Hide Rate/Lessons for Students
             if (user.role === 'student') {
                 document.getElementById('rate-container').style.display = 'none';
                 document.getElementById('rate-divider').style.display = 'none';
-
-                // Show lessons count but with updated label if needed, or keep as is.
-                // User said "keep the lesson counter next to the 5 star reviews thing"
-                // The layout changes in HTML (flex: 1) should handle the split.
-
-                // Update Popular Text
-                document.getElementById('p-popular-text').textContent = "2 new contacts and 9 lessons taken in the last 48 hours.";
             } else {
                 document.getElementById('rate-container').style.display = 'block';
                 document.getElementById('rate-divider').style.display = 'block';
-                document.getElementById('p-popular-text').textContent = "2 new contacts and 9 lesson bookings in the last 48 hours.";
             }
 
             // --- Video Logic ---
@@ -956,6 +952,63 @@
                 }
             }
         };
+
+        // --- Render Profile Stats ---
+        function renderProfileStats(stats, role) {
+            // 1. Rating & Reviews
+            const ratingEl = document.getElementById('p-rating');
+            const reviewCountEl = document.getElementById('p-review-count');
+
+            if (stats.rating !== null) {
+                // Show rating with star icon
+                ratingEl.innerHTML = `
+                    <svg class="rating-star" viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    ${stats.rating}
+                `;
+                reviewCountEl.textContent = `${stats.reviewCount} review${stats.reviewCount !== 1 ? 's' : ''}`;
+            } else {
+                ratingEl.innerHTML = `
+                    <svg class="rating-star" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.3;">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                    </svg>
+                    —
+                `;
+                reviewCountEl.textContent = 'No reviews yet';
+            }
+
+            // 2. Lessons Count
+            const lessonsEl = document.getElementById('p-lessons-count');
+            if (stats.lessonsCount > 0) {
+                lessonsEl.textContent = stats.lessonsCount >= 100 ? '100+' : stats.lessonsCount;
+            } else {
+                lessonsEl.textContent = '—';
+            }
+
+            // 3. Popular Text
+            const popularEl = document.getElementById('p-popular-text');
+            const label = role === 'student' ? 'lessons taken' : 'lesson bookings';
+
+            if (stats.connections48h > 0 || stats.bookings48h > 0) {
+                popularEl.textContent = `${stats.connections48h} new contact${stats.connections48h !== 1 ? 's' : ''} and ${stats.bookings48h} ${label} in the last 48 hours.`;
+            } else {
+                // Hide popular section if no activity
+                const popularSection = popularEl.closest('div[style*="margin-top: 24px"]');
+                if (popularSection) {
+                    popularSection.style.display = 'none';
+                }
+            }
+
+            // 4. Response Time
+            const responseTimeEl = document.getElementById('p-response-time');
+            if (stats.responseTime !== null) {
+                responseTimeEl.textContent = `Usually responds in ${stats.responseTime}`;
+            } else {
+                responseTimeEl.textContent = 'Usually responds in —';
+            }
+        }
+
 
         // --- Share Modal Logic ---
         window.openShareModal = () => {

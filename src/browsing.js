@@ -1,10 +1,14 @@
 import { supabase } from './lib/supabase.js';
 import { logger } from './lib/logger.js';
 import { connections } from './lib/connections.js';
+import { getProfileCounts } from './lib/profileCounts.js';
 
 export async function renderBrowsingPage(type) {
     const grid = document.querySelector('.profiles-grid');
     if (!grid) return;
+
+    // Fetch and display profile count
+    updateProfileCount(type);
 
     // Show loading state
     grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center;">Loading profiles...</p>';
@@ -414,3 +418,35 @@ window.handleConnectionAction = async (targetUserId) => {
         }
     }
 };
+
+/**
+ * Fetch and display profile count for the current browse page
+ */
+async function updateProfileCount(type) {
+    try {
+        const counts = await getProfileCounts();
+
+        let countEl, count, label;
+
+        if (type === 'tutor') {
+            countEl = document.getElementById('tutor-count');
+            count = counts.tutors;
+            label = 'verified tutors available';
+        } else if (type === 'counselor') {
+            countEl = document.getElementById('counselor-count');
+            count = counts.counselors;
+            label = 'verified counselors available';
+        } else if (type === 'buddy') {
+            countEl = document.getElementById('student-count');
+            count = counts.students;
+            label = 'active students online';
+        }
+
+        if (countEl) {
+            countEl.textContent = `${count} ${label}`;
+        }
+    } catch (error) {
+        console.error('Error updating profile count:', error);
+        // Keep "Loading..." on error
+    }
+}

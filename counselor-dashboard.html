@@ -82,7 +82,9 @@
                 <h1 id="user-name">Welcome back</h1>
                 <p style="color: var(--text-secondary);">Counselor Dashboard</p>
             </div>
-            <button class="btn btn-secondary">Availability</button>
+            <div style="display: flex; gap: 12px;">
+                <!-- Availability button removed -->
+            </div>
         </div>
 
         <div class="dashboard-tabs">
@@ -90,10 +92,17 @@
             <button class="tab-btn" data-tab="requests">Booking Requests</button>
             <button class="tab-btn" data-tab="messages">Messages</button>
             <button class="tab-btn" data-tab="saved">Saved Users</button>
-            <button class="tab-btn" data-tab="profile">Profile & Specialties</button>
+            <button class="tab-btn" data-tab="availability">Availability</button>
+            <button class="tab-btn" data-tab="profile">Profile & Rates</button>
         </div>
 
         <div id="tab-upcoming" class="tab-content active">
+            <!-- Session Summary Metrics -->
+            <div id="session-summary" style="margin-bottom: 32px;"></div>
+
+            <!-- Next Session Preview -->
+            <div id="next-session-preview" style="margin-bottom: 24px;"></div>
+
             <div id="upcoming-list">Loading...</div>
         </div>
 
@@ -110,7 +119,59 @@
         </div>
 
         <div id="tab-profile" class="tab-content">
-            <h3>Edit Counselor Profile</h3>
+            <h3>Edit Counselor Profile & Rates</h3>
+        </div>
+
+        <div id="tab-availability" class="tab-content">
+            <div class="availability-header" style="margin-bottom: 24px;">
+                <h3>Manage Availability</h3>
+                <p style="color: var(--text-secondary);">Click slots to toggle availability. Red slots are booked
+                    sessions.</p>
+            </div>
+
+            <div class="calendar-controls">
+                <button class="btn btn-secondary" id="cal-prev-week">&larr; Previous Week</button>
+                <h4 id="cal-current-range" style="font-size: 1.1rem; font-weight: 600;">Loading...</h4>
+                <button class="btn btn-secondary" id="cal-next-week">Next Week &rarr;</button>
+            </div>
+
+            <div class="calendar-grid-container">
+                <div class="calendar-header-row" id="cal-header-row">
+                    <!-- JS Injected: Time Label Col + 7 Days -->
+                </div>
+                <div class="calendar-body" id="cal-body">
+                    <!-- JS Injected: 30 min rows -->
+                </div>
+            </div>
+
+            <!-- Legend -->
+            <div
+                style="display: flex; gap: 24px; margin-top: 16px; font-size: 0.9rem; color: var(--text-secondary); align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div
+                        style="width: 16px; height: 16px; border: 1px solid #E5E5E5; background: white; border-radius: 4px;">
+                    </div>
+                    <span>Unavailable</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div
+                        style="width: 16px; height: 16px; background: #E3F2FD; border-left: 3px solid #007AFF; border-radius: 4px;">
+                    </div>
+                    <span>Available</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div
+                        style="width: 16px; height: 16px; background: #FFF0F0; border-left: 3px solid #FF3B30; border-radius: 4px;">
+                    </div>
+                    <span>Booked</span>
+                </div>
+            </div>
+
+            <div id="calendar-save-bar" class="save-bar">
+                <span id="save-bar-msg" style="font-weight: 500;">You have unsaved changes.</span>
+                <button class="btn btn-secondary" id="cal-discard-btn">Discard</button>
+                <button class="btn btn-primary" id="cal-save-btn">Save Changes</button>
+            </div>
         </div>
     </div>
 </body>
