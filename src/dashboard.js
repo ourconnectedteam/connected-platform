@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         } = await supabase.auth.getUser();
         if (!user) return;
 
-        // Fetch bookings (simplified query)
         // Fetch bookings & reviews
         const role =
             document.title.includes('Tutor') || document.title.includes('Counselor')
@@ -68,10 +67,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         const { data: bookings } = await query;
 
+        // Compute metrics
+        const now = new Date();
+        const upcoming = bookings?.filter(b =>
+            new Date(b.scheduled_start) > now &&
+            !['cancelled', 'rejected'].includes(b.status)
+        ) || [];
+
+        const completed = bookings?.filter(b =>
+            b.status === 'completed' ||
+            (new Date(b.scheduled_end) < now && b.status === 'confirmed')
+        ) || [];
+
+        const totalHours = bookings?.reduce((sum, b) => sum + (b.duration_minutes || 60), 0) / 60 || 0;
+
+        const nextSession = upcoming
+            .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))[0];
+
+        // Render summary metrics
+        renderSessionSummary(upcoming.length, completed.length, totalHours, nextSession);
+
+        // Render next session preview
+        renderNextSessionPreview(nextSession, isProvider);
+
         if (!bookings || bookings.length === 0) {
+            const cta = isProvider
+                ? '<div style="color: #6B7280; font-size: 0.95rem;">Students will book sessions with you</div>'
+                : '<a href="/tutors.html" class="btn btn-primary" style="margin-top: 8px;">Browse Tutors</a>';
+
             list.innerHTML = `
-                <div style="text-align: center; padding: 40px; color: #888;">
-                    <p style="font-size: 1.1rem; margin-bottom: 12px;">No sessions found.</p>
+                <div style="text-align: center; padding: 60px 20px; color: #6B7280;">
+                    <div style="font-size: 3.5rem; margin-bottom: 16px; opacity: 0.6;">📚</div>
+                    <p style="font-size: 1.2rem; margin-bottom: 12px; font-weight: 600; color: #111827;">No sessions yet</p>
+                    <p style="font-size: 0.95rem; margin-bottom: 24px;">Get started by booking your first session!</p>
+                    ${cta}
                 </div>
             `;
             return;
@@ -1893,4 +1922,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             loadBookings(); // Refresh list
         }
     });
-});
+
+    // Helper functions for session summary
+    function renderSessionSummary(upcomingCount, completedCount, totalHours, nextSession) {
+        const container = document.getElementById('session-summary');
+        if (!container) return;
+
+        const nextDate = nextSession
+            ? new Date(nextSession.scheduled_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : 'None';
+
+        container.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                ${createMetricCard('📅', 'Upcoming Sessions', upcomingCount)}
+                ${createMetricCard('✅', 'Completed', completedCount)}
+                ${createMetricCard('⏱️', 'Total Hours', totalHours.toFixed(1) + 'h')}
+                ${createMetricCard('🔜', 'Next Session', nextDate)}
+            </div>
+        `;
+    }
+
+    function createMetricCard(icon, label, value) {
+        return `
+            <div style="background: white; border: 1px solid #E5E7EB; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: transform 0.2s;">
+                <div style="font-size: 1.5rem; margin-bottom: 8px;">${icon}</div>
+                <div style="color: #6B7280; font-size: 0.85rem; margin-bottom: 4px; font-weight: 500;">${label}</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #111827;">${value}</div>
+            </div>
+        `;
+    }
+
+    function renderNextSessionPreview(session, isProvider) {
+        const container = document.getElementById('next-session-preview');
+        if (!container) return;
+
+        if (!session) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const startDate = new Date(session.scheduled_start);
+        const otherUser = session.profiles;
+        const duration = session.duration_minutes || 60;
+
+        container.innerHTML = `
+            <div style="background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%); border-radius: 16px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
+                <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px;">NEXT SESSION</div>
+                <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; line-height: 1.3;">
+                    ${startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at ${startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+                <div style="display: flex; gap: 24px; flex-wrap: wrap; opacity: 0.95; font-size: 0.95rem;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>👤</span>
+                        <span>${otherUser?.full_name || 'User'}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>⏱️</span>
+                        <span>${duration} min</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span>💰</span>
+                        <span>$${session.price_total || session.price || 0}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    initialize();
+})();
