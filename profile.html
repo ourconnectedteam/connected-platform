@@ -969,13 +969,9 @@
                 `;
                 reviewCountEl.textContent = `${stats.reviewCount} review${stats.reviewCount !== 1 ? 's' : ''}`;
             } else {
-                ratingEl.innerHTML = `
-                    <svg class="rating-star" viewBox="0 0 24 24" fill="currentColor" style="opacity: 0.3;">
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                    —
-                `;
-                reviewCountEl.textContent = 'No reviews yet';
+                // Show 0 if no reviews
+                ratingEl.innerHTML = '0';
+                reviewCountEl.textContent = 'No Reviews';
             }
 
             // 2. Lessons Count
@@ -983,7 +979,7 @@
             if (stats.lessonsCount > 0) {
                 lessonsEl.textContent = stats.lessonsCount >= 100 ? '100+' : stats.lessonsCount;
             } else {
-                lessonsEl.textContent = '—';
+                lessonsEl.textContent = '0';
             }
 
             // 3. Popular Text

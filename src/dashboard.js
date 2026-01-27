@@ -3,6 +3,8 @@ import { supabase } from './lib/supabase.js';
 import { messaging } from './lib/messaging.js';
 import { connections } from './lib/connections.js';
 import { booking } from './lib/booking.js';
+import { getUserTimezone, formatSessionTime, formatSessionLong } from './lib/timezone.js';
+import { renderNotificationsSection } from './lib/notifications.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // Tab Logic
@@ -45,6 +47,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         } = await supabase.auth.getUser();
         if (!user) return;
 
+        // Fetch user profile to get timezone
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('timezone')
+            .eq('id', user.id)
+            .single();
+
+        const userTimezone = getUserTimezone(profile?.timezone);
+
         // Fetch bookings & reviews
         const role =
             document.title.includes('Tutor') || document.title.includes('Counselor')
@@ -85,22 +96,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             .sort((a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start))[0];
 
         // Render summary metrics
-        renderSessionSummary(upcoming.length, completed.length, totalHours, nextSession);
+        renderSessionSummary(upcoming.length, completed.length, totalHours, nextSession, userTimezone);
+
 
         // Render next session preview
-        renderNextSessionPreview(nextSession, isProvider);
+        renderNextSessionPreview(nextSession, isProvider, userTimezone);
+
+        // Render notifications (empty state for now, will be populated in next task)
+        renderNotifications();
 
         if (!bookings || bookings.length === 0) {
-            const cta = isProvider
-                ? '<div style="color: #6B7280; font-size: 0.95rem;">Students will book sessions with you</div>'
-                : '<a href="/tutors.html" class="btn btn-primary" style="margin-top: 8px;">Browse Tutors</a>';
+            const emptyMessage = isProvider
+                ? '<p style="font-size: 0.95rem; color: #6B7280; margin-top: 8px;">No upcoming sessions scheduled.</p>'
+                : `
+                    <p style="font-size: 0.95rem; color: #6B7280; margin-bottom: 16px;">You have no upcoming sessions.</p>
+                    <a href="/tutors.html" class="btn btn-primary btn-sm">Browse Tutors</a>
+                `;
 
             list.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px; color: #6B7280;">
-                    <div style="font-size: 3.5rem; margin-bottom: 16px; opacity: 0.6;">📚</div>
-                    <p style="font-size: 1.2rem; margin-bottom: 12px; font-weight: 600; color: #111827;">No sessions yet</p>
-                    <p style="font-size: 0.95rem; margin-bottom: 24px;">Get started by booking your first session!</p>
-                    ${cta}
+                <div style="text-align: center; padding: 32px 20px; background: #F9FAFB; border-radius: 12px; border: 1px dashed #E5E7EB;">
+                    ${emptyMessage}
                 </div>
             `;
             return;
@@ -165,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 <div style="flex: 1;">
                     <div style="display:flex; justify-content:space-between; align-items:start;">
                         <h4 style="font-weight: 600; margin-bottom: 4px;">
-                            ${new Date(b.scheduled_start).toLocaleDateString()} @ ${new Date(b.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            ${formatSessionTime(b.scheduled_start, userTimezone)} <span style="font-size: 0.8rem; color: #9CA3AF; font-weight: 400;">(Local time)</span>
                         </h4>
                         ${statusBadge}
                     </div>
@@ -779,6 +794,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             data: { user },
         } = await supabase.auth.getUser();
 
+        // Fetch user profile to get timezone
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('timezone')
+            .eq('id', user.id)
+            .single();
+
+        const userTimezone = getUserTimezone(profile?.timezone);
+
         // Fetch bookings needing approval
         // Role check: Only providers (tutors/counselors) should see this generally, but code handles it via tab visibility.
         // Assuming user.id is provider_id
@@ -819,7 +843,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div>
                         <div style="font-weight: 600; margin-bottom: 4px;">${r.profiles.full_name}</div>
                         <div style="font-size: 0.9rem; color: #666;">
-                            Requested: ${new Date(r.scheduled_start).toLocaleDateString()} @ ${new Date(r.scheduled_start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            Requested: ${formatSessionTime(r.scheduled_start, userTimezone)} <span style="font-size: 0.8rem; color: #9CA3AF;">(Local time)</span>
                         </div>
                         <div style="font-size: 0.8rem; color: #888; margin-top: 4px;">Price: $${r.price_total || r.price}</div>
                     </div>
@@ -1924,12 +1948,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     // Helper functions for session summary
-    function renderSessionSummary(upcomingCount, completedCount, totalHours, nextSession) {
+    function renderSessionSummary(upcomingCount, completedCount, totalHours, nextSession, userTimezone) {
         const container = document.getElementById('session-summary');
         if (!container) return;
 
         const nextDate = nextSession
-            ? new Date(nextSession.scheduled_start).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            ? formatSessionTime(nextSession.scheduled_start, userTimezone, { showDate: true, showTime: false })
             : 'None';
 
         container.innerHTML = `
@@ -1952,7 +1976,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         `;
     }
 
-    function renderNextSessionPreview(session, isProvider) {
+    function renderNextSessionPreview(session, isProvider, userTimezone) {
         const container = document.getElementById('next-session-preview');
         if (!container) return;
 
@@ -1961,7 +1985,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        const startDate = new Date(session.scheduled_start);
         const otherUser = session.profiles;
         const duration = session.duration_minutes || 60;
 
@@ -1969,7 +1992,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div style="background: linear-gradient(135deg, #667EEA 0%, #764BA2 100%); border-radius: 16px; padding: 24px; color: white; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);">
                 <div style="font-size: 0.9rem; opacity: 0.9; margin-bottom: 8px; font-weight: 600; letter-spacing: 0.5px;">NEXT SESSION</div>
                 <div style="font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; line-height: 1.3;">
-                    ${startDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })} at ${startDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                    ${formatSessionLong(session.scheduled_start, userTimezone)}
+                </div>
+                <div style="font-size: 0.85rem; opacity: 0.8; margin-top: -8px; margin-bottom: 8px;">
+                    Your local time
                 </div>
                 <div style="display: flex; gap: 24px; flex-wrap: wrap; opacity: 0.95; font-size: 0.95rem;">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1987,6 +2013,73 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
         `;
+    }
+
+    // Render Latest Notifications section
+    // Render Latest Notifications section
+    async function renderNotifications() {
+        const container = document.getElementById('notifications-container');
+        if (!container) return;
+
+        // Fetch user
+        const {
+            data: { user },
+        } = await supabase.auth.getUser();
+        if (!user) return;
+
+        try {
+            const { data: notifications, error } = await supabase
+                .from('notifications')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                // If table doesn't exist yet, fails gracefully
+                console.warn('Notifications fetch failed (table might be missing):', error);
+                throw error;
+            }
+
+            container.innerHTML = renderNotificationsSection({
+                notifications: notifications || [],
+                loading: false,
+                error: null,
+            });
+
+            // Add click listeners
+            const items = container.querySelectorAll('.notification-item');
+            items.forEach((item, index) => {
+                const note = notifications[index];
+                item.style.cursor = 'pointer';
+                item.onclick = async () => {
+                    // Mark as read if unread
+                    if (!note.read) {
+                        // Optimistic update
+                        item.classList.remove('unread');
+                        const dot = item.querySelector('.unread-dot');
+                        if (dot) dot.remove();
+                        const title = item.querySelector('h4');
+                        if (title) title.style.fontWeight = '500';
+
+                        // DB Update
+                        await supabase.from('notifications').update({ read: true }).eq('id', note.id);
+                    }
+
+                    // Navigate if link exists
+                    if (note.link) {
+                        window.location.href = note.link;
+                    }
+                };
+            });
+        } catch (err) {
+            // Fallback to empty state on error (e.g. table missing)
+            container.innerHTML = renderNotificationsSection({
+                notifications: [],
+                loading: false,
+                error: null,
+            });
+        }
     }
 
     initialize();
