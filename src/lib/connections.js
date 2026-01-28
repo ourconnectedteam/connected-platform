@@ -104,4 +104,80 @@ export const connections = {
 
         return 'none';
     },
+
+    // Send Connection Request
+    async sendRequest(requesterId, receiverId) {
+        // Validate inputs
+        if (!requesterId || !receiverId) {
+            return { error: { message: 'Invalid user IDs provided.', code: 'INVALID_INPUT' } };
+        }
+
+        if (requesterId === receiverId) {
+            return { error: { message: 'Cannot send connection request to yourself.', code: 'SELF_REQUEST' } };
+        }
+
+        // Check if users are already connected (check both directions)
+        const { data: conn1 } = await supabase
+            .from('connections')
+            .select('id')
+            .eq('user_a', requesterId)
+            .eq('user_b', receiverId)
+            .maybeSingle();
+
+        const { data: conn2 } = await supabase
+            .from('connections')
+            .select('id')
+            .eq('user_a', receiverId)
+            .eq('user_b', requesterId)
+            .maybeSingle();
+
+        if (conn1 || conn2) {
+            return { error: { message: 'You are already connected with this user.', code: 'ALREADY_CONNECTED' } };
+        }
+
+        // Check if a request already exists (in either direction)
+        const { data: request1 } = await supabase
+            .from('connection_requests')
+            .select('id, status')
+            .eq('requester_id', requesterId)
+            .eq('receiver_id', receiverId)
+            .maybeSingle();
+
+        const { data: request2 } = await supabase
+            .from('connection_requests')
+            .select('id, status')
+            .eq('requester_id', receiverId)
+            .eq('receiver_id', requesterId)
+            .maybeSingle();
+
+        const existingRequest = request1 || request2;
+        if (existingRequest) {
+            if (existingRequest.status === 'pending') {
+                return { error: { message: 'A connection request is already pending.', code: 'DUPLICATE_REQUEST' } };
+            } else if (existingRequest.status === 'accepted') {
+                return { error: { message: 'You are already connected with this user.', code: 'ALREADY_CONNECTED' } };
+            }
+        }
+
+        // Create new connection request
+        const { data, error } = await supabase
+            .from('connection_requests')
+            .insert({
+                requester_id: requesterId,
+                receiver_id: receiverId,
+                status: 'pending'
+            })
+            .select()
+            .single();
+
+        if (error) {
+            // Handle unique constraint violation (duplicate request)
+            if (error.code === '23505') {
+                return { error: { message: 'A connection request already exists.', code: 'DUPLICATE_REQUEST' } };
+            }
+            return { error };
+        }
+
+        return { data, success: true };
+    },
 };

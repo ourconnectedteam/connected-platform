@@ -142,6 +142,22 @@
             const signupForm = document.getElementById('signup-form');
             const msg = document.getElementById('auth-message');
 
+            // Handle Social Login (Google OAuth)
+            window.handleSocialLogin = async (provider) => {
+                try {
+                    const { data, error } = await auth.signInWithOAuth(provider);
+                    if (error) {
+                        msg.textContent = error.message || 'Failed to sign in with ' + provider;
+                        msg.classList.remove('hidden');
+                    }
+                    // If successful, the OAuth flow will redirect automatically
+                } catch (err) {
+                    console.error('Social login error:', err);
+                    msg.textContent = 'An error occurred. Please try again.';
+                    msg.classList.remove('hidden');
+                }
+            };
+
             // Function to switch tabs
             function switchTab(tab) {
                 msg.classList.add('hidden');

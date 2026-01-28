@@ -52,7 +52,12 @@ export async function renderBrowsingPage(type) {
         query = supabase.from('counselor_profiles').select('*, profiles(*)');
         // Add counselor filters here if needed
     } else if (type === 'buddy') {
-        query = supabase.from('student_profiles').select('*, profiles(*)');
+        // Query from profiles table first (where all students exist)
+        // Then join with student_profiles (which may not exist for all students)
+        query = supabase
+            .from('profiles')
+            .select('*, student_profiles(*)')
+            .eq('role', 'student');
     }
 
     const { data: profiles, error } = await query;
@@ -60,8 +65,17 @@ export async function renderBrowsingPage(type) {
 
     if (error) {
         console.error('Error fetching profiles:', error);
+        console.error('Error details:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+        });
         grid.innerHTML =
-            '<p style="grid-column: 1/-1; text-align: center; color: red;">Failed to load profiles. Please try again later.</p>';
+            `<p style="grid-column: 1/-1; text-align: center; color: red;">
+                Failed to load profiles: ${error.message || 'Unknown error'}<br>
+                <small style="color: #666;">Check console for details</small>
+            </p>`;
         return;
     }
 
@@ -76,12 +90,25 @@ export async function renderBrowsingPage(type) {
     let validCards = 0;
     profiles.forEach(item => {
         try {
-            const user = item.profiles; // joined profile data
+            // Handle different data structures based on query type
+            let user, details;
+            if (type === 'buddy') {
+                // For buddies: item is the profile, student_profiles is joined
+                user = item;
+                details = Array.isArray(item.student_profiles) && item.student_profiles.length > 0 
+                    ? item.student_profiles[0] 
+                    : {}; // Empty object if no student_profiles entry exists
+            } else {
+                // For tutors/counselors: item is the role profile, profiles is joined
+                user = item.profiles;
+                details = item;
+            }
+            
             if (!user) {
                 console.warn('Skipping item with missing profile data:', item);
                 return;
             }
-            const card = createCard(type, item, user);
+            const card = createCard(type, details, user);
             grid.appendChild(card);
             validCards++;
         } catch (err) {
@@ -400,17 +427,16 @@ window.handleConnectionAction = async (targetUserId) => {
         showToast('Connection Accepted', 'You are now connected!', 'success');
         updateConnectionButton(targetUserId);
     } else if (status === 'none') {
-        // Send new request
-        const { error } = await supabase.from('connection_requests').insert({
-            requester_id: user.id,
-            receiver_id: targetUserId,
-        });
+        // Send new request using the connections library
+        const { data, error } = await connections.sendRequest(user.id, targetUserId);
 
         if (error) {
-            if (error.code === '23505') {
+            if (error.code === 'DUPLICATE_REQUEST' || error.code === '23505') {
                 showToast('Request Pending', 'You already sent a connection request.', 'info');
+            } else if (error.code === 'ALREADY_CONNECTED') {
+                showToast('Already Connected', 'You are already connected with this user.', 'info');
             } else {
-                showToast('Error', error.message, 'error');
+                showToast('Error', error.message || 'Failed to send connection request.', 'error');
             }
         } else {
             showToast('Invite Sent', 'They will get a notification shortly.', 'success');

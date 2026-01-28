@@ -17,7 +17,8 @@ export const auth = {
 
         if (error) return { data, error };
 
-        // 2. Create Profile Entry manually
+        // 2. Create Profile Entry manually (fallback if trigger fails)
+        // The trigger should create it automatically, but we do this as a backup
         if (data.user && data.session) {
             logger.debug('Attempting profile creation for', data.user.id);
             const { error: profileError } = await supabase.from('profiles').insert({
@@ -25,13 +26,17 @@ export const auth = {
                 role: role,
                 full_name: email.split('@')[0],
                 avatar_url: `https://ui-avatars.com/api/?name=${email}&background=random`,
-            });
+            }).select().single();
 
             if (profileError) {
-                console.error('Profile creation failed:', profileError);
-                // We return the error but the auth user is created.
-                // The dashboard handles missing profiles by redirecting to onboarding.
-                return { data, error: profileError };
+                // If profile already exists (trigger created it), that's fine
+                if (profileError.code === '23505') { // Unique constraint violation
+                    logger.debug('Profile already exists (likely created by trigger)');
+                } else {
+                    console.error('Profile creation failed:', profileError);
+                    // Don't block signup - user can complete profile in onboarding
+                    // The dashboard handles missing profiles by redirecting to onboarding.
+                }
             }
         }
 
