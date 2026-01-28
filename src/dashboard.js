@@ -1062,8 +1062,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <select id="prof-grade" class="form-select">
                             <option value="">Select Grade</option>
                             <option value="Pre-IB" ${roleData.grade_level === 'Pre-IB' ? 'selected' : ''}>Pre-IB</option>
-                            <option value="IB1 (Year 12)" ${roleData.grade_level === 'IB1 (Year 12)' ? 'selected' : ''}>IB1 (Year 12)</option>
-                            <option value="IB2 (Year 13)" ${roleData.grade_level === 'IB2 (Year 13)' ? 'selected' : ''}>IB2 (Year 13)</option>
+                            <option value="IB1" ${roleData.grade_level === 'IB1' || roleData.grade_level === 'IB1 (Year 12)' ? 'selected' : ''}>IB Year 1</option>
+                            <option value="IB2" ${roleData.grade_level === 'IB2' || roleData.grade_level === 'IB2 (Year 13)' ? 'selected' : ''}>IB Year 2</option>
                         </select>
                     </div>
                     <div class="form-group">
